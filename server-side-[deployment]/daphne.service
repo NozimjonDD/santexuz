@@ -1,0 +1,17 @@
+#Daphne is a HTTP, HTTP2, and WebSocket protocol server designed for ASGI (Asynchronous Server Gateway Interface) applications.
+[Unit]
+Description=pyproject api
+After=network-online.target
+
+[Service]
+Environment=address=:8080
+Environment=BASE_URL=https://your.domain.ru
+Environment=TOKEN=7a3a1b117ce9f25a5b1a1ebfa2193543
+Environment=JWT_SIGNING_KEY=aaa123z!@#
+Environment=DATABASE_URL=postgres://pg_user:pg_user@localhost:5432/databese?sslmode=disable
+WorkingDirectory=/var/www/myproject/api
+ExecStart=/var/www/myproject/api/backend
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

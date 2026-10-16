@@ -1,0 +1,20 @@
+[Unit]
+Description= myproject gunicorn daemon
+Requires=myproject-gunicorn.socket
+After=network.target
+
+[Service]
+User=root
+Group=www-data
+WorkingDirectory=/home/dir/myproject/myproject-backend
+ExecStart=/home/dir/myproject/myproject-backend/venv/bin/gunicorn \
+                                                      --access-logfile /var/log/gunicorn/mymaster/access.log \
+                                                      --error-logfile /var/log/gunicorn/mymaster/error.log \
+                                        --bind unix:/run/myproject.sock myproject-backend.wsgi:application \
+                                        --workers 3 \
+                                        --reload \
+                                        --access-logfile - \
+
+[Install]
+WantedBy=multi-user.target
+

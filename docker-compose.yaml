@@ -1,0 +1,100 @@
+version: '3.8'
+
+services:
+  django:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: django_app
+    depends_on:
+      - pg_master
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - DATABASE_NAME=${DB_NAME}
+      - DATABASE_USER=${DB_USER}
+      - DATABASE_PASSWORD=${DB_PASSWORD}
+      - DATABASE_PORT=${DB_PORT}
+    volumes:
+      - ./static:/app/static
+      - ./media:/app/media
+    ports:
+      - "${DJANGO_PORT}:8000"
+    networks:
+      - app_network
+
+  django_grpc:
+    build:
+      context: .
+      dockerfile: ./apps/grpcservice/Dockerfile
+    container_name: django_grpc
+    depends_on:
+      - django
+      - pg_master
+    restart: always
+    env_file:
+      - .env
+
+    environment:
+      #      PYTHONPATH: "/app"
+      - DATABASE_NAME=${DB_NAME}
+      - DATABASE_USER=${DB_USER}
+      - DATABASE_PASSWORD=${DB_PASSWORD}
+      - DATABASE_PORT=${DB_PORT}
+    ports:
+      - "50051:50051"
+    networks:
+      - app_network
+
+  pg_master:
+    image: postgres:16
+    container_name: pg_master
+    restart: always
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      PGDATA: /var/lib/postgresql/data
+    volumes:
+      - /var/www/gg/rep/pgmaster_data:/var/lib/postgresql/data
+      - /var/www/gg/rep/temppgmaster_data:/tmp
+    #    ports:
+    #      - "${DB_PORT}:5432"
+    networks:
+      - app_network
+
+  pg_standby:
+    image: postgres:16
+    container_name: pg_standby
+    restart: always
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      PGDATA: /var/lib/postgresql/data
+    #    command: >
+    #      bash -c "rm -rf /var/lib/postgresql/data/*
+    #      && pg_basebackup -h pg_master -D /var/lib/postgresql/data -U ${REPLICATOR_USER} -Fp -Xs -P -R
+    #      && ${REPLICATOR_USER}"
+    depends_on:
+      - pg_master
+    volumes:
+      - /var/www/gg/rep/pgstandby_data:/var/lib/postgresql/data
+      - /var/www/gg/rep/temppgstandby_data:/tmp
+    #    ports:
+    #      - "${REPLICA_PORT}:5432"
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge
+
+volumes:
+  pgmaster_data:
+  pgstandby_data:
