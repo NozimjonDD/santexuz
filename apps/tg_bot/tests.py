@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from django.core.management import call_command
+from django.core.management.base import CommandError
 from django.db import transaction
 from django.test import TestCase, override_settings
 from django.utils import timezone
@@ -12,6 +13,36 @@ from rest_framework.test import APITestCase
 from apps.tg_bot.models import Notification
 from apps.tg_bot.services import enqueue, notification_text
 from apps.users.models import User
+
+
+@override_settings(MINI_APP_URL="https://miniapp.example.test/", TELEGRAM_WEBHOOK_SECRET="test-webhook-secret-with-at-least-32-characters")
+class WebhookSetupTests(TestCase):
+    def test_inspection_does_not_register_or_send_messages(self):
+        with patch("apps.tg_bot.management.commands.configure_telegram_webhook.bot_call", return_value={
+            "url": "https://miniapp.example.test/telegram/webhook/", "pending_update_count": 0,
+        }) as request:
+            call_command("configure_telegram_webhook", stdout=StringIO())
+        request.assert_called_once_with("getWebhookInfo", {})
+
+    def test_explicit_registration_preserves_pending_updates(self):
+        with patch("apps.tg_bot.management.commands.configure_telegram_webhook.bot_call", side_effect=[True, True, {
+            "url": "https://miniapp.example.test/telegram/webhook/", "pending_update_count": 2,
+        }]) as request:
+            call_command("configure_telegram_webhook", register=True, stdout=StringIO())
+        webhook = request.call_args_list[0].args
+        self.assertEqual(webhook[0], "setWebhook")
+        self.assertFalse(webhook[1]["drop_pending_updates"])
+        self.assertEqual(webhook[1]["allowed_updates"], ["message"])
+        self.assertEqual(webhook[1]["secret_token"], "test-webhook-secret-with-at-least-32-characters")
+        self.assertEqual(request.call_args_list[1].args[0], "setChatMenuButton")
+
+    def test_missing_or_failed_webhook_fails_without_raw_provider_details(self):
+        with patch("apps.tg_bot.management.commands.configure_telegram_webhook.bot_call", return_value={"url": ""}):
+            with self.assertRaises(CommandError):
+                call_command("configure_telegram_webhook", stdout=StringIO())
+        with patch("apps.tg_bot.management.commands.configure_telegram_webhook.bot_call", side_effect=RuntimeError("telegram_delivery_failed")):
+            with self.assertRaisesMessage(CommandError, "telegram_delivery_failed"):
+                call_command("configure_telegram_webhook", stdout=StringIO())
 
 
 class NotificationTests(TestCase):

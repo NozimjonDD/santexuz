@@ -93,3 +93,11 @@ Backend tekshirish buyrug‘i (virtual muhit faollashtirilgan):
 ```bash
 python scripts/verify.py
 ```
+
+## Ubuntu production qo‘shimchasi (hali bajarilmagan)
+
+`deploy/ubuntu/README.md` serverda o‘rnatish va qabul tekshiruvini beradi. Production uchun PostgreSQL majburiy, umumiy cache jadvali, HTTPS proxy chegarasi, alohida migrator, private/static ruxsatlari va journald loglari qo‘shildi. `apps/common/tests.py` da DB/cache uzilganda maxfiy tafsilotlarsiz 503 hamda DBdan mustaqil liveness; `apps/tg_bot/tests.py` da webhookni faqat aniq `--register` bilan sozlash va pending update’larni saqlash uchun testlar yozildi.
+
+`deploy/ubuntu/test_deploy.py` literal env, sirli fayl ruxsatlari, secure umaskdan keyingi release fayllari, tashqi symlink va readiness xatosidagi maintenance holati uchun alohida Ubuntu unit testlarini beradi; tizim buyruqlari mock qilingan.
+
+Ushbu yangi testlar va deployment fayllari yozish kompyuteri qoidasi asosida **bajarilmadi**. Yuqoridagi avvalgi 70 test natijasi bu qo‘shimcha uchun yangi tekshiruv natijasi emas. API testlari alohida PostgreSQL test bazasida; Nginx/systemd/TLS/Telegram va backup-restore esa boshqa kompyuter yoki staging Ubuntu serverda tekshirilishi kerak. Production bazasida `verify.sh` ishlatilmaydi.

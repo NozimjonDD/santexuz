@@ -1,14 +1,5 @@
 #!/usr/bin/env bash
-
-pip install -r requirements/production.txt
-
-python manage.py collectstatic --noinput
-
-
-python manage.py migrate
-
-#sudo systemctl restart gunicorn.service
-#sudo systemctl restart celery.service
-#sudo systemctl restart celerybeat.service
-
-echo -e "\033[1m Restarted! \033[0m"
+set -euo pipefail
+echo 'Retired. On Ubuntu use: sudo python3 deploy/ubuntu/deploy.py release' >&2
+echo 'The release command performs backup, migrations, service restart and readiness checks.' >&2
+exit 2

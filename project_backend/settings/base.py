@@ -124,10 +124,10 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "/static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"
+STATIC_ROOT = Path(os.getenv("STATIC_ROOT", str(BASE_DIR / "staticfiles")))
 STATICFILES_DIRS = [BASE_DIR / "static"]
 # Private media must only be streamed by authenticated API views, never by nginx aliases.
-MEDIA_ROOT = BASE_DIR / "storage" / "private"
+MEDIA_ROOT = Path(os.getenv("MEDIA_ROOT", str(BASE_DIR / "storage" / "private")))
 MEDIA_URL = "/private-media/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

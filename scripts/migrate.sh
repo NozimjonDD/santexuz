@@ -1,15 +1,5 @@
 #!/usr/bin/env bash
-set -e
-
-#echo "Creating database backup..." # todo
-#pg_dump $DATABASE_URL > backup_$(date +%Y%m%d_%H%M%S).sql
-
-echo "Running migrations..."
-python manage.py migrate --check
-python manage.py migrate
-
-echo "Running data migrations..."
-python manage.py run_data_migrations
-
-echo "Verifying deployment..."
-python manage.py check --deploy
+set -euo pipefail
+echo 'Retired. Production schema changes use the separate migrator through deploy/ubuntu/deploy.py release.' >&2
+echo 'For an isolated development database use python manage.py migrate.' >&2
+exit 2

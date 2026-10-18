@@ -1,0 +1,23 @@
+[Unit]
+Description=@@APP_NAME@@ assignment deadline scan
+After=network.target postgresql.service
+ConditionPathExists=@@APP_ROOT@@/current/manage.py
+ConditionPathExists=!@@APP_ROOT@@/shared/maintenance.flag
+
+[Service]
+Type=oneshot
+User=@@APP_USER@@
+Group=@@APP_USER@@
+WorkingDirectory=@@APP_ROOT@@/current
+EnvironmentFile=/etc/@@APP_NAME@@/production.env
+Environment=PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
+ExecStart=@@APP_ROOT@@/current/.venv/bin/python manage.py scan_assignment_deadlines
+TimeoutStartSec=300
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=@@APP_ROOT@@/shared
+StandardOutput=journal
+StandardError=journal
