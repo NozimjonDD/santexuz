@@ -24,7 +24,7 @@ class NotificationListView(generics.ListAPIView):
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):
             return Notification.objects.none()
-        return Notification.objects.filter(user=self.request.user).select_related("user")
+        return Notification.objects.filter(user=self.request.user, is_deleted=False).select_related("user")
 
 
 class NotificationReadView(generics.GenericAPIView):
@@ -32,7 +32,7 @@ class NotificationReadView(generics.GenericAPIView):
 
     @extend_schema(request=None, responses=NotificationSerializer)
     def post(self, request, pk):
-        item = get_object_or_404(Notification, pk=pk, user=request.user)
+        item = get_object_or_404(Notification, pk=pk, user=request.user, is_deleted=False)
         if not item.read_at:
             item.read_at = timezone.now()
             item.save(update_fields=["read_at"])

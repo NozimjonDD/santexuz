@@ -11,6 +11,9 @@ db.sqlite3
 db.sqlite3-journal
 media/
 static/
+!static/
+static/*
+!static/miniapp/
 locale/
 storage/
 
@@ -469,6 +472,7 @@ $RECYCLE.BIN/
 !apps/fantasy/migrations/__init__.py
 */migrations/*
 !*/migrations/__init__.py
+!apps/**/migrations/*.py
 # Applications
 *.app
 *.exe

@@ -16,8 +16,8 @@ apps/
   orders/                     # model, selector, tranzaksion service va PDF
   tg_bot/                     # webhook, kontakt tekshiruvi va transactional outbox
 project_backend/settings/     # base / development / production / test
-templates/8mobile/            # Mini App bazasi va boshlang‘ich mijoz sahifasi
-static/miniapp/               # sahifaning lokal CSS/JS fayllari
+templates/8mobile/            # uch rol uchun Mini App shell
+static/miniapp/               # rol ekranlari, API client, tarjimalar, komponentlar va lokal shrift
 requirements/                # base / develop / production
 docs/                        # TZ, SQL dizayn, arxitektura, API va tekshirish holati
 ```
@@ -26,7 +26,7 @@ SQL dizayn avval yozildi: `docs/schema.sql` va `docs/orders_schema.sql`. Amaldag
 
 ## Boshqa kompyuterda dastlabki sozlash
 
-Python 3.11 yoki 3.12 va PostgreSQL talab qilinadi. Shu kompyuterda paket o‘rnatish, Django ishga tushirish, migratsiya yoki test bajarilmadi.
+Python 3.11+ va PostgreSQL talab qilinadi. Keyingi tekshiruvda foydalanuvchining aniq ko‘rsatmasi bilan mavjud Python 3.14/SQLite muhitida backend tekshiruvlari bajarildi; paket o‘rnatilmadi va server ishga tushirilmadi. PostgreSQL parallel to‘lov testlari hali boshqa muhitda bajarilishi kerak.
 
 1. Backend papkasini boshqa kompyuterga ko‘chiring; virtual muhit yarating va faollashtiring.
 2. `.env.example` dan `.env` yarating yoki mavjud `.env` dagi bo‘sh qiymatlarni to‘ldiring. `.env` gitdan chiqarilgan; uni alohida uzating.
@@ -50,7 +50,9 @@ Admin orqali markaz manzili/telefon/ish vaqti, avans, komissiyalar, xizmatlar/ta
 
 ### Telegramsiz lokal ko‘rish
 
-`project_backend.settings.development` rejimida `DEV_LOCAL_LOGIN=true` (default) bo‘lsa, `http://127.0.0.1:8000/` yoki `http://localhost:8000/` da **Brauzerda sinov uchun kirish** tugmasi chiqadi. Alohida `__santex_local_preview__` mijoz akkaunti yaratiladi: u admin/hamkor huquqiga ega emas, Telegramga bog‘lanmagan va sinov telefoni bilan ishlaydi. Shu akkaunt orqali yuborilgan buyurtmalar bazada saqlanadi. Hudud/guruhlar uchun avval `seed_pilot` kerak; haqiqiy tarif va yuridik ma’lumotlar avtomatik kiritilmaydi.
+`project_backend.settings.development` rejimida `DEV_LOCAL_LOGIN=true` (default) bo‘lsa, `http://127.0.0.1:8000/` yoki `http://localhost:8000/` da **Sinov akkaunti** tugmasi chiqadi. Alohida `__santex_local_preview__` mijoz akkaunti yaratiladi: u admin/hamkor huquqiga ega emas, Telegramga bog‘lanmagan va sinov telefoni bilan ishlaydi. Shu akkaunt orqali yuborilgan buyurtmalar bazada saqlanadi. Hudud/guruhlar uchun avval `seed_pilot` kerak; haqiqiy tarif va yuridik ma’lumotlar avtomatik kiritilmaydi.
+
+**Dizaynni ko‘rish** tugmasi berilgan HTML dizayni asosidagi uch rol ekranini namunaviy ma’lumot bilan ochadi. Tepada Mijoz/Usta/Do‘kon tanlanadi; bu rejim bazaga hech narsa yozmaydi. Haqiqiy ro‘l va ruxsatlar Telegram akkaunti hamda backenddan olinadi. Ekranlar va TZ mosligi: [Mini App UI](docs/miniapp_ui.md).
 
 Kirish faqat development flag + `DEBUG=True` + localhost host + loopback ulanishida, CSRF bilan himoyalangan POST orqali ishlaydi. Productionda endpoint ulanmaydi va sahifada tugma chiqmaydi. Lokal kirishni o‘chirish: `.env` da `DEV_LOCAL_LOGIN=false`. `X-Forwarded-For` ga ishonilmaydi; lokal proxy ortida development serverni ommaga ochmang.
 
@@ -78,8 +80,20 @@ Productionda `DJANGO_SETTINGS_MODULE=project_backend.settings.production`, HTTPS
 
 ## Qamrov va tekshirish holati
 
-To‘liq REST biznes oqimlari yozildi. Mini App template boshlang‘ich mijoz oqimi: Telegram kirish, telefon ulashish, so‘rov, buyurtma holati, smeta va qabul amallari. Barcha santexnik/do‘kon ekranlari va alohida React CRM frontend bu backend topshirig‘ida qurilmadi; ular hujjatlashtirilgan APIlardan foydalanadi.
+REST biznes oqimlari va berilgan 44 ekran dizayniga asoslangan adaptiv Mini App yozildi: mijoz, santexnik va do‘kon, UZ/RU/EN, smeta/shartnoma/to‘lov/yetkazish/ish yakuni. Alohida React CRM bu o‘zgarish doirasiga kirmaydi. Interaktiv xaritada nuqta tanlash uchun xarita provayderini tanlash ochiq qolmoqda; lokatsiya olish va koordinata kiritish mavjud.
 
-Testlar yozilgan, **bajarilmagan**. Arxitektura va kod matni mustaqil agent ko‘rigidan o‘tkazildi; runtime natijasi tasdiqlanmagan. Hozirgi backend papkasida git repozitoriy topilmadi, shuning uchun commit/push qilinmadi.
+2026-10-18 tekshiruvi: `verify.sh` muvaffaqiyatli, 70 testdan 68 tasi o‘tdi; 2 ta PostgreSQL row-lock testi SQLite sabab o‘tkazib yuborildi. OpenAPI qat’iy validatsiyasi xato va ogohlantirishsiz o‘tdi. Frontend Node testlari, real Telegram va vizual natija hali tekshirilmagan. Joriy o‘zgarishlar commit/push qilinmadi.
+
+Windows PowerShellda Bash talab qilinmaydi. Loyiha virtual muhitini faollashtirib:
+
+```powershell
+python scripts/verify.py
+```
+
+Tayyor boshqa kompyuterda Node.js 22+ bilan:
+
+```bash
+bash scripts/verify.sh && node --test scripts/miniapp_api.test.mjs
+```
 
 Batafsil: [arxitektura](docs/architecture.md), [API shartnomasi](docs/API.md), [qabul mezonlari va testlar](docs/verification.md), [amalga oshirish rejasi](docs/implementation_plan.md).

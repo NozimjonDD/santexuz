@@ -109,7 +109,14 @@ SIMPLE_JWT = {
 }
 
 SPECTACULAR_SETTINGS = {"TITLE": "Santex API", "VERSION": "1.0.0", "SERVE_INCLUDE_SCHEMA": False,
-                        "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAdminUser"]}
+                        "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAdminUser"],
+                        "ENUM_NAME_OVERRIDES": {
+                            "AccountLanguage": "apps.catalog.models.LANGUAGES",
+                            "LoginLanguage": ["uz", "ru", "en"],
+                            "OrderStatus": "apps.orders.models.Order.Status",
+                            "DeliveryStatus": "apps.orders.models.Delivery.Status",
+                            "DeliveryUpdateStatus": ["preparing", "dispatched", "delivered"],
+                        }}
 LANGUAGE_CODE = "uz"
 LANGUAGES = [("uz", "O‘zbek"), ("ru", "Русский"), ("en", "English")]
 TIME_ZONE = "Asia/Tashkent"

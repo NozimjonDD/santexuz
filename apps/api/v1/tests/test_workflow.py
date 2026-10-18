@@ -2,7 +2,6 @@
 from datetime import time, timedelta
 from decimal import Decimal
 from io import BytesIO
-import tempfile
 from unittest.mock import patch
 
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -228,6 +227,9 @@ class WorkflowAPITests(APITestCase):
         profile = PlumberProfile.objects.create(user=second)
         profile.regions.add(self.region); profile.services.add(self.group)
         self.action(self.staff, order, "assign-plumber", {"plumber_id": second.pk}, staff=True)
+        order.refresh_from_db()
+        self.assertIsNone(order.work_starts_at)
+        self.assertIsNone(order.work_ends_at)
         self.request(self.plumber, "get", f"/api/v1/site/orders/{order.pk}/", expected=404)
 
     def test_partner_decline_commits_and_returns_success_without_private_order(self):
@@ -360,7 +362,10 @@ class WorkflowAPITests(APITestCase):
     def test_protected_attachment_download_and_pdf_participant_scope(self):
         order = self.create_order()
         self.client.force_authenticate(self.customer)
-        with tempfile.TemporaryDirectory() as directory, override_settings(MEDIA_ROOT=directory):
+        with override_settings(STORAGES={
+            "default": {"BACKEND": "django.core.files.storage.InMemoryStorage"},
+            "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+        }):
             file = SimpleUploadedFile("sample.png", b"\x89PNG\r\n\x1a\n" + b"fixture", content_type="image/png")
             response = self.client.post(f"/api/v1/site/orders/{order.pk}/attachments/", {"file": file, "purpose": "request"}, format="multipart")
             self.assertEqual(response.status_code, 201)
@@ -383,13 +388,15 @@ class WorkflowAPITests(APITestCase):
         report = self.request(self.staff, "get", "/api/v1/admin/reports/")
         self.assertEqual(report.data["count"], 1)
         csv = self.request(self.staff, "get", "/api/v1/admin/reports/?export=csv")
-        self.assertIn(b"store_commission", csv.content)
+        self.assertIn(b"store_commission", b"".join(csv.streaming_content))
+        csv.close()
         xlsx = self.request(self.staff, "get", "/api/v1/admin/reports/?export=xlsx")
         from openpyxl import load_workbook
-        workbook = load_workbook(BytesIO(xlsx.content), read_only=True)
+        workbook = load_workbook(BytesIO(b"".join(xlsx.streaming_content)), read_only=True)
         rows = list(workbook["UZS"].values)
         self.assertEqual(rows[1][0], order.pk)
         workbook.close()
+        xlsx.close()
         self.request(self.staff, "get", "/api/v1/admin/reports/?date_from=2026-10-20&date_to=2026-10-01", expected=400)
 
 

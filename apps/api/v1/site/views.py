@@ -47,6 +47,15 @@ class OrderViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.Ge
         if getattr(self, "swagger_fake_view", False):
             return models.Order.objects.none()
         queryset = selectors.orders_for(self.request.user)
+        bucket = self.request.query_params.get("bucket", "all")
+        if bucket not in {"all", "active", "history"}:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError({"bucket": "Use all, active or history."})
+        finished = (models.Order.Status.CLOSED, models.Order.Status.CANCELLED, models.Order.Status.REJECTED)
+        if bucket == "active":
+            queryset = queryset.exclude(status__in=finished)
+        elif bucket == "history":
+            queryset = queryset.filter(status__in=finished)
         region_id = positive_query_id(self.request, "region")
         group_id = positive_query_id(self.request, "group")
         if region_id:

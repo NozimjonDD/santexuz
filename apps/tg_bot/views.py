@@ -3,6 +3,8 @@ import re
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
+from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer
+from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -20,6 +22,15 @@ class TelegramWebhookView(APIView):
     permission_classes = [AllowAny]
     throttle_classes = []
 
+    @extend_schema(
+        request=inline_serializer(name="TelegramWebhookUpdate", fields={
+            "update_id": serializers.IntegerField(min_value=0, max_value=2**63 - 1),
+            "message": serializers.DictField(required=False),
+        }),
+        responses={200: inline_serializer(name="TelegramWebhookAccepted", fields={"ok": serializers.BooleanField()})},
+        parameters=[OpenApiParameter("X-Telegram-Bot-Api-Secret-Token", location=OpenApiParameter.HEADER, required=True)],
+        auth=[],
+    )
     @transaction.atomic
     def post(self, request):
         expected = settings.TELEGRAM_WEBHOOK_SECRET

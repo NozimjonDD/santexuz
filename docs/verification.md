@@ -1,10 +1,10 @@
 # Qabul mezonlari va tekshirish holati
 
-**Holat: kod va testlar yozilgan; test/migratsiya/build bajarilmagan.** Bu kompyuter foydalanuvchi qoidasiga ko‘ra faqat kod yozish uchun. Python, Django, paket installer, test, linter, formatter yoki server ishlatilmadi. Fayllar va bog‘lanishlar faqat matndan ko‘rib chiqildi.
+**Joriy holat — 2026-10-18:** foydalanuvchining `verify.sh` xatosini shu kompyuterda qayta chiqarish haqidagi aniq ko‘rsatmasi bilan tekshiruv bajarildi. Git Bash orqali `scripts/verify.sh` exit 0 bilan tugadi: konfiguratsiya, model/migratsiya mosligi, qat’iy OpenAPI validatsiyasi, migratsiyalar, seed va backend testlari o‘tdi.
 
-Manba fayllarida 56 ta `test_*` metod yozilgan; bu bajarilgan testlar soni yoki coverage o‘lchovi emas.
+**Natija:** 70 testdan 68 tasi muvaffaqiyatli, 2 ta PostgreSQL row-lock testi SQLite sabab o‘tkazib yuborildi. Oxirgi to‘liq test bajarilishi 16.465 soniya. Python 3.14 va loyihaning mavjud `venv` muhiti ishlatildi. Paket o‘rnatilmadi, dev server yoki build ishga tushirilmadi. Frontend Node testlari, real Telegram, PostgreSQL concurrency va vizual sifat hali tasdiqlanmagan.
 
-Keyingi lokal preview o‘zgarishi uchun `apps/api/v1/auth/test_development.py` da yana 7 ta test yozildi: localhost/DEBUG/flag chegaralari, CSRF, IPv6, haqiqiy akkaunt bilan to‘qnashuv va preview tokenlarini productionda rad etish. Ular ham bajarilmadi.
+Lokal preview testlari ham bajarildi: localhost/DEBUG/flag chegaralari, CSRF, IPv6, haqiqiy akkaunt bilan to‘qnashuv va preview tokenlarini productionda rad etish.
 
 ## TZ bilan bog‘lanish
 
@@ -46,7 +46,7 @@ Skript Django konfiguratsiyasi, migratsiya/model mosligi, migratsiyalar va barch
 
 Qo‘lda: Telegram botda `/start` → o‘z kontaktini ulashish → Mini App; haqiqiy routing bilan ETA; uch tildagi PDFni ochib/chop etib ko‘rish; qog‘ozdagi to‘rt imzo jarayoni; reverse proxy orqali begona foydalanuvchi private media ololmasligini tekshirish.
 
-Test natijasi, coverage foizi, production ishlashi yoki PDFning vizual sifati bu topshiriqda **tasdiqlanmagan**. Real tarif/hamkor/markaz/yuridik matnlar kiritilmaguncha pilotni ishga tushirish yakunlanmaydi.
+Coverage foizi, production ishlashi va PDFning vizual sifati **tasdiqlanmagan**. Yuqoridagi SQLite backend test natijasi tasdiqlangan. Real tarif/hamkor/markaz/yuridik matnlar kiritilmaguncha pilotni ishga tushirish yakunlanmaydi.
 
 ## Matn asosidagi review
 
@@ -64,4 +64,32 @@ Mustaqil agent reviewi orqali topilgan va tuzatilgan holatlar:
 - Qayta smeta refundidan keyin qolgan pulni to‘liq qaytarish; bekor qilingandan keyingi admin ruxsati va boshqa santexnikka xavfsiz qayta tayinlash.
 - Shartnoma/avansdan oldin yolg‘on kelish sanasi bermaslik va bekor qilingan buyurtmada qoldiq qarzdorlikni ko‘rsatmaslik.
 
-`Code Review` connectorida faqat PR/CI diagnostika vositasi mavjud. Git repozitoriy/PR berilmagani sabab undan review yoki CI xulosasi olinmadi. Matn ko‘rigi test natijasi sifatida ko‘rsatilmaydi.
+`Code Review` connectorida faqat PR/CI diagnostika vositasi mavjud. PR ko‘rsatilmagani sabab undan review yoki CI xulosasi olinmadi. Matn ko‘rigi test natijasi sifatida ko‘rsatilmaydi.
+
+## 2026-10-18 UI va optimizatsiya qo‘shimchasi
+
+Rolga mos Mini App ekranlari, uch til, adaptiv kartalar/formalar, lokal read-only dizayn namoyishi va API ulanishi yozildi. Tafsilot: `docs/miniapp_ui.md`. Oldingi “faqat boshlang‘ich mijoz UI” qamrovi shu o‘zgarishda kengaytirildi.
+
+`scripts/miniapp_api.test.mjs`: frontend modul sintaksisi, parallel refresh, kechikkan 401, bo‘sh/204 javoblar, refresh rad etilishi, multipart/CSRF, pagination va abort holatlari uchun testlar yozildi; Node testlari hali bajarilmagan. `apps/api/v1/tests/test_review.py`: deleted account/catalog, production preview chegarasi, order bucket, moliyaviy jami, doimiy query soni va barcha immutable jurnallar uchun raw SQL himoyasi testlari muvaffaqiyatli bajarildi. Eksport testi streaming javoblarni o‘qishga moslandi va o‘tdi.
+
+```bash
+bash scripts/verify.sh && node --test scripts/miniapp_api.test.mjs
+```
+
+Node 22+ va oldindan tayyorlangan Python/PostgreSQL muhiti kerak. Runtime va vizual tekshiruv boshqa kompyuter vazifasi. Yangi UI uchun 320/390/768/1280px, UZ/RU/EN, uch rol, katta shrift, Telegram klaviaturasi va safe area ko‘rilishi kerak.
+
+## `verify.sh` xatolari va tuzatishlar
+
+- SQLite BaseModel migratsiyalarida jadvallar qayta yaratilganda custom triggerlar yo‘qolgan. Yangi `common.0005`, `catalog.0005`, `orders.0006` migratsiyalari audit, andoza, shartnoma va pul jurnallari himoyasini tiklaydi. PostgreSQL triggerlariga tegmaydi. Oldingi qo‘llangan migratsiyalar tahrirlanmadi.
+- Attachment testi OS vaqtinchalik katalogining Windows sandbox ruxsatiga bog‘liq edi. Fixture saqlash uchun Django InMemoryStorage ishlatildi; huquq va fayl oqimi testi saqlandi.
+- Custom JWT va refresh uchun OpenAPI adapterlari, public/staff serializerlarining alohida component nomlari, aniq enum nomlari va Telegram webhook request/response sxemasi qo‘shildi. `spectacular --validate --fail-on-warn` exit 0 bilan o‘tdi.
+- Faqat test sozlamalarida kutilgan 4xx loglar kamaytirildi; 500 xatolar va test assertionlari ko‘rinib qoladi. Production loglari o‘zgarmadi.
+- `scripts/verify.py` barcha olti bosqich uchun yagona cross-platform runner. `verify.sh` loyihaning virtual muhitini aniqlab shu runnerni bajaradi. PowerShellda Bashsiz `python scripts/verify.py` ishlatiladi. Shell fayllariga Git LF satr yakuni belgilandi.
+
+SQLite’da keyingi jadvalni qayta yaratuvchi schema migratsiyalarida custom triggerlar yana tekshirilishi va zarur bo‘lsa shu migratsiya zanjirida tiklanishi kerak.
+
+Backend tekshirish buyrug‘i (virtual muhit faollashtirilgan):
+
+```bash
+python scripts/verify.py
+```

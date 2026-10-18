@@ -14,6 +14,15 @@ User = get_user_model()
 
 
 class ValidatedModelSerializer(serializers.ModelSerializer):
+    def get_fields(self):
+        fields = super().get_fields()
+        for field in fields.values():
+            relation = field.child_relation if isinstance(field, serializers.ManyRelatedField) else field
+            queryset = getattr(relation, "queryset", None)
+            if queryset is not None and hasattr(queryset.model, "is_deleted"):
+                relation.queryset = queryset.filter(is_deleted=False)
+        return fields
+
     def to_internal_value(self, data):
         if not isinstance(data, dict):
             raise serializers.ValidationError("JSON object expected.")

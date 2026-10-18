@@ -1,36 +1,29 @@
 {% extends '8mobile/base-common.html' %}
 {% block content %}
-<h1 data-i18n="title">Santexnika xizmati</h1>
-<label for="language" data-i18n="language">Til</label>
-<select id="language"><option value="uz">O‘zbekcha</option><option value="ru">Русский</option><option value="en">English</option></select>
-<p id="message" role="status" aria-live="polite"></p>
-{% if local_preview_enabled %}
-<section id="dev-preview" hidden>
-  {% csrf_token %}
-  <p data-i18n="devNote">Development rejimi: alohida sinov mijoz akkaunti bilan brauzerdan kirish. Kiritgan buyurtmalaringiz lokal bazada saqlanadi.</p>
-  <button id="dev-login" type="button" data-i18n="devLogin">Brauzerda sinov uchun kirish</button>
-</section>
-{% endif %}
-<section id="profile" hidden>
-  <p id="identity"></p>
-  <button id="contact" type="button" data-i18n="contact">Telefonni ulashish</button>
-  <form id="request-form" hidden>
-    <h2 data-i18n="new">Yangi so‘rov</h2>
-    <label for="region" data-i18n="region">Hudud</label><select id="region" required></select>
-    <label for="group" data-i18n="group">Xizmat guruhi</label><select id="group" required></select>
-    <label for="address" data-i18n="address">Manzil</label><textarea id="address" required maxlength="500"></textarea>
-    <button id="location" type="button" data-i18n="location">Joylashuvni olish</button>
-    <label for="latitude" data-i18n="latitude">Kenglik</label><input id="latitude" type="number" step="0.000001" min="-90" max="90" required>
-    <label for="longitude" data-i18n="longitude">Uzunlik</label><input id="longitude" type="number" step="0.000001" min="-180" max="180" required>
-    <label for="description" data-i18n="description">Muammo izohi</label><textarea id="description" maxlength="4000"></textarea>
-    <label><input id="urgent" type="checkbox"><span data-i18n="urgent">Shoshilinch</span></label>
-    <label><input id="consent" type="checkbox" required><span data-i18n="consent">Telefonim, manzilim va media fayllarim buyurtma ishtirokchilariga berilishiga roziman.</span></label>
-    <button type="submit" data-i18n="send">So‘rov yuborish</button>
-  </form>
-  <h2 data-i18n="orders">Buyurtmalar</h2>
-  <button id="refresh" type="button" data-i18n="refresh">Yangilash</button>
-  <div id="orders"></div>
-  <section id="detail" hidden><h2 data-i18n="detail">Buyurtma tafsilotlari</h2><div id="order-detail"></div></section>
-</section>
-<section><h2 data-i18n="help">Yordam</h2><p id="service-center"></p></section>
+<a class="skip-link" href="#screen">Kontentga o‘tish</a>
+<div class="app-shell">
+  <header class="app-header">
+    <a href="#home" class="brand" aria-label="Santex"><span class="brand-mark" aria-hidden="true">S</span><span>Santex<small>Marhamat · Mini App</small></span></a>
+    <div class="header-actions">
+      <label class="sr-only" for="language">Til / Язык / Language</label>
+      <select id="language" class="language-select"><option value="uz">UZ</option><option value="ru">RU</option><option value="en">EN</option></select>
+      <button class="icon-button" id="notifications-button" type="button" aria-label="Bildirishnomalar"><span id="bell-icon" aria-hidden="true"></span><span id="notification-dot" class="notification-dot" hidden></span></button>
+    </div>
+  </header>
+  {% if local_preview_enabled %}
+  <aside class="preview-bar" id="dev-preview">
+    {% csrf_token %}
+    <span id="preview-label">Lokal ishlab chiqish rejimi</span>
+    <button type="button" id="dev-login" class="text-button">Sinov akkaunti</button>
+    <button type="button" id="design-preview" class="text-button">Dizaynni ko‘rish</button>
+    <label id="demo-role-label" hidden><span class="sr-only">Rol</span><select id="demo-role"><option value="customer">Mijoz</option><option value="plumber">Usta</option><option value="store">Do‘kon</option></select></label>
+  </aside>
+  {% endif %}
+  <div id="offline-banner" class="notice warning offline-banner" role="status" hidden></div>
+  <main id="screen" tabindex="-1" aria-busy="true"><div class="loading-state" role="status"><span class="spinner" aria-hidden="true"></span><p>Santex yuklanmoqda…</p><div class="skeleton"></div><div class="skeleton short"></div></div></main>
+  <nav id="bottom-nav" class="bottom-nav" aria-label="Asosiy navigatsiya"></nav>
+</div>
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+<dialog id="action-dialog" aria-labelledby="dialog-title"><div class="dialog-header"><h2 id="dialog-title"></h2><button class="icon-button" id="close-dialog" type="button" aria-label="Yopish">×</button></div><div id="dialog-content"></div></dialog>
+<noscript><p class="notice">Mini Appdan foydalanish uchun JavaScriptni yoqing.</p></noscript>
 {% endblock %}

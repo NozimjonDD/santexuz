@@ -1,11 +1,11 @@
 import csv
-from io import BytesIO
+from tempfile import SpooledTemporaryFile
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import IntegrityError, transaction
 from django.db.models.deletion import ProtectedError
-from django.http import HttpResponse
+from django.http import FileResponse, StreamingHttpResponse
 from rest_framework import mixins, status, viewsets
 from rest_framework import serializers as drf_serializers
 from rest_framework.decorators import action
@@ -313,39 +313,60 @@ class ReportView(APIView):
             queryset = queryset.filter(created_at__date__gte=filters["date_from"])
         if filters.get("date_to"):
             queryset = queryset.filter(created_at__date__lte=filters["date_to"])
-        rows = []
-        for order in queryset.iterator(chunk_size=200):
-            row = {"order_id": order.pk, "status": order.status, "customer_id": order.customer_id,
-                   "plumber_id": order.plumber_id, "store_id": order.store_id, "created_at": order.created_at.isoformat()}
-            row.update(selectors.financial_summary(order))
-            quote = order.quotes.filter(version=order.approved_version or order.quote_version).first()
-            for key in ("plumber_rate", "store_rate", "plumber_commission", "store_commission"):
-                row[key] = quote.snapshot.get(key, "0.00") if quote else "0.00"
-            rows.append(monetary_projection(row))
+        queryset = selectors.financial_queryset(queryset)
+        rows = self.rows(queryset)
         if export == "json":
+            rows = list(rows)
             return Response({"currency": "UZS", "count": len(rows), "results": rows})
+        count = queryset.count()
         if export == "csv":
-            response = HttpResponse(content_type="text/csv; charset=utf-8")
-            response.write("\ufeff")
-            writer = csv.writer(response)
-            writer.writerow(REPORT_COLUMNS)
-            for row in rows:
-                writer.writerow([export_cell(row.get(column)) for column in REPORT_COLUMNS])
+            response = StreamingHttpResponse(self.csv_rows(rows), content_type="text/csv; charset=utf-8")
         else:
             from openpyxl import Workbook
 
             workbook = Workbook(write_only=True)
-            sheet = workbook.create_sheet("UZS")
-            sheet.append(REPORT_COLUMNS)
-            for row in rows:
-                sheet.append([export_cell(row.get(column)) for column in REPORT_COLUMNS])
-            buffer = BytesIO()
-            workbook.save(buffer)
-            response = HttpResponse(buffer.getvalue(), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            buffer = SpooledTemporaryFile(max_size=8 * 1024 * 1024, mode="w+b")
+            try:
+                sheet = workbook.create_sheet("UZS")
+                sheet.append(REPORT_COLUMNS)
+                for row in rows:
+                    sheet.append([export_cell(row.get(column)) for column in REPORT_COLUMNS])
+                workbook.save(buffer)
+                buffer.seek(0)
+                response = FileResponse(buffer, content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            except Exception:
+                buffer.close()
+                raise
+            finally:
+                workbook.close()
         response["Content-Disposition"] = f'attachment; filename="santex-financial-report.{export}"'
         response["Cache-Control"] = "private, no-store"
-        record(request.user, "api.report_export", request.user, {"format": export, "orders": len(rows)})
+        # Records export authorization, not proof that a client consumed a stream.
+        record(request.user, "api.report_export", request.user, {"format": export, "orders": count, "delivery": "requested"})
         return response
+
+    @staticmethod
+    def rows(queryset):
+        for order in queryset.iterator(chunk_size=200):
+            row = {"order_id": order.pk, "status": order.status, "customer_id": order.customer_id,
+                   "plumber_id": order.plumber_id, "store_id": order.store_id, "created_at": order.created_at.isoformat()}
+            row.update(selectors.financial_summary(order))
+            quote = selectors.current_quote(order)
+            for key in ("plumber_rate", "store_rate", "plumber_commission", "store_commission"):
+                row[key] = quote.snapshot.get(key, "0.00") if quote else "0.00"
+            yield monetary_projection(row)
+
+    @staticmethod
+    def csv_rows(rows):
+        class Echo:
+            def write(self, value):
+                return value
+
+        writer = csv.writer(Echo())
+        yield "\ufeff"
+        yield writer.writerow(REPORT_COLUMNS)
+        for row in rows:
+            yield writer.writerow([export_cell(row.get(column)) for column in REPORT_COLUMNS])
 
 
 class ReportFilter(drf_serializers.Serializer):

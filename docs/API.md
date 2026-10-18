@@ -156,3 +156,9 @@ Asosiy ketma-ketlik: mijoz so‘rovi → staff tayinlash → santexnik qabul/ko�
 ## OpenAPI
 
 `GET /api/schema/` va `/api/docs/` staff ruxsatini talab qiladi. Faqat shu o‘qish endpointlarida JWT bilan birga Django admin staff sessiyasi ham qabul qilinadi: `/admin/` ga kirib, keyin `/api/docs/` ni ochish mumkin. Biznes APIlari yozish uchun JWT talab qiladi. Boshqa kompyuterda `python manage.py spectacular --file openapi.yaml` bilan schema eksporti mavjud.
+
+### Mini App ro‘yxat filtri
+
+`GET /api/v1/site/orders/?bucket=all|active|history`: `all` default; `history` — closed/cancelled/rejected, `active` — qolgan holatlar. Filtr foydalanuvchining ishtirokchilik chegarasi va sahifalashdan oldin qo‘llanadi. Begona bucket 400. Oldingi `region`, `group`, `status` filtrlari ham ishlaydi.
+
+CSV/XLSX hisobotlar endi streaming fayl javoblari. JSON shakli o‘zgarmadi. Eksport auditi so‘rov/ruxsatni qayd etadi, faylning mijoz tomonidan to‘liq qabul qilinganini bildirmaydi.

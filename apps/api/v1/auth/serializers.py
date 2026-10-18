@@ -1,15 +1,17 @@
 from rest_framework import serializers
+from rest_framework.exceptions import AuthenticationFailed
 from apps.users.models import User
 from rest_framework_simplejwt.serializers import TokenRefreshSerializer
-from apps.common.authentication import require_preview_boundary
+from apps.common.authentication import active_user_rule, require_preview_boundary
 
 
 class ApplicationTokenRefreshSerializer(TokenRefreshSerializer):
     def validate(self, attrs):
         token = self.token_class(attrs["refresh"])
         user = User.objects.filter(pk=token.get("user_id")).first()
-        if user is not None:
-            require_preview_boundary(user, self.context["request"])
+        if not active_user_rule(user):
+            raise AuthenticationFailed("Account is inactive or deleted.")
+        require_preview_boundary(user, self.context["request"])
         return super().validate(attrs)
 
 

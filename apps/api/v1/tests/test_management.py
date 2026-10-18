@@ -122,6 +122,11 @@ class ManagementAPITests(APITestCase):
         schema = self.client.get("/api/schema/")
         self.assertEqual(schema.status_code, 200)
         self.assertIn("/api/v1/site/orders/{id}/approve-quote/", schema.data["paths"])
+        schemes = schema.data["components"]["securitySchemes"]
+        self.assertEqual(schemes["jwtAuth"]["scheme"], "bearer")
+        components = schema.data["components"]["schemas"]
+        self.assertNotIn("is_active", components["PublicRegion"]["properties"])
+        self.assertIn("is_active", components["Region"]["properties"])
         self.assertEqual(self.client.get("/api/docs/").status_code, 200)
 
 
