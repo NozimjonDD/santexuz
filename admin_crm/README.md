@@ -6,7 +6,7 @@ Marhamat pilotidagi santexnika xizmat markazi uchun o‘zbekcha React admin pane
 
 ## Muhim: bu kompyuterda ishga tushirmang
 
-Bu workspace faqat kod yozish uchun. Dependency o‘rnatish, test, typecheck, build, server va Docker buyruqlari **boshqa kompyuterda** bajariladi. Quyidagi buyruqlar o‘sha kompyuter uchun yozilgan. Ushbu ish davomida ular bajarilmadi; brauzer ko‘rinishi ham tekshirilmadi.
+Bu workspace faqat kod yozish uchun. Dependency o‘rnatish, test, typecheck, build va server buyruqlari **boshqa kompyuterda** bajariladi. Quyidagi buyruqlar o‘sha kompyuter uchun yozilgan. Ushbu ish davomida ular bajarilmadi; brauzer ko‘rinishi ham tekshirilmadi.
 
 ## Ishga tushirish
 
@@ -48,27 +48,33 @@ npx playwright install --with-deps chromium webkit && npm run test:e2e
 
 ## Production hosting
 
-`deploy/nginx.conf` ichida SPA history fallback bor: masalan, `/orders/DEMO-1006`ni to‘g‘ridan-to‘g‘ri ochish `index.html`ga qaytariladi. `/assets/` uchun uzoq cache, HTML uchun qayta tekshirish, xavfsizlik sarlavhalari va `/health` yo‘li belgilangan. Ilova domen ildiziga (`/`) joylashtirish uchun sozlangan.
+`deploy/nginx-production.conf` ichida SPA history fallback bor: masalan, `/orders/DEMO-1006`ni to‘g‘ridan-to‘g‘ri ochish `index.html`ga qaytariladi. `/assets/` uchun uzoq cache, HTML uchun qayta tekshirish, xavfsizlik sarlavhalari va `/health` yo‘li belgilangan. Ilova domen ildiziga (`/`) joylashtirish uchun sozlangan. Production frontend statik fayllar sifatida Nginx orqali tarqatiladi; Docker ishlatilmaydi.
 
-Docker orqali boshqa kompyuterda:
+GitHub Actions kodi typecheck, biznes testlari, production build va desktop/mobil Playwright tekshiruvlarini bajarish uchun yozilgan; bu yerda hali bajarilmagan.
 
-```bash
-docker compose up --build -d
-```
+### Ubuntu server: `titan-crm.hh-academy.uz`
 
-Manzil: `http://127.0.0.1:8080`. Konteyner unprivileged Nginx, read-only filesystem va vaqtinchalik yoziladigan kataloglar bilan sozlangan. Tashqi serverda TLS terminatsiyasi/reverse proxy alohida o‘rnatiladi. GitHub Actions kodi typecheck, biznes testlari, production build va desktop/mobil Playwright tekshiruvlarini bajarish uchun yozilgan; bu yerda hali bajarilmagan.
+Bu frontend backend API’siga ulanmagan demo holatida qoladi. Unda faqat sun’iy ma’lumotlar bor; haqiqiy mijoz ma’lumotlarini kiritmang va uni amaldagi admin tizimi sifatida ishlatmang. Nginx build qilingan statik fayllarni `/var/www/titan-crm/current` dan to‘g‘ridan-to‘g‘ri xizmat qiladi; backend sozlamalariga tegilmaydi.
 
-### Ubuntu server: `admin.titan-service.hh-academy.uz`
-
-Bu frontend backend API’siga ulanmagan demo holatida qoladi. Unda faqat sun’iy ma’lumotlar bor; haqiqiy mijoz ma’lumotlarini kiritmang va uni amaldagi admin tizimi sifatida ishlatmang. Backend o‘z socketidan foydalanadi, CRM Docker konteyneri esa faqat `127.0.0.1:8081`da tinglaydi.
-
-DNS’da `admin.titan-service.hh-academy.uz` A yozuvi server IP manziliga qaragan, 80/443 portlari ochiq bo‘lishi kerak. Backend Nginx sozlamalariga tegmasdan frontend uchun alohida site sozlanadi. Repo ildizidan (`admin_crm/` papkasining ota papkasidan):
+DNS’da `titan-crm.hh-academy.uz` A yozuvi server IP manziliga qaragan, 80/443 portlari ochiq bo‘lishi kerak. Backend Nginx sozlamalariga tegmasdan frontend uchun alohida site sozlanadi. Repo ildizidan (`admin_crm/` papkasining ota papkasidan):
 
 ```bash
-cd admin_crm && sudo install -d -m 0755 /var/www/letsencrypt && sudo install -m 0644 deploy/nginx-bootstrap.conf /etc/nginx/sites-available/admin-crm && sudo ln -s /etc/nginx/sites-available/admin-crm /etc/nginx/sites-enabled/admin-crm && sudo nginx -t && sudo systemctl reload nginx && sudo certbot certonly --webroot --webroot-path /var/www/letsencrypt --non-interactive --agree-tos --email titanserviceuz@gmail.com --cert-name admin.titan-service.hh-academy.uz --domain admin.titan-service.hh-academy.uz && sudo install -m 0644 deploy/nginx-production.conf /etc/nginx/sites-available/admin-crm && sudo nginx -t && sudo systemctl reload nginx && docker compose up --build -d && curl --fail --silent --show-error https://admin.titan-service.hh-academy.uz/health
+cd admin_crm && npm ci && npm run build
 ```
 
-Docker Compose порт `8081`-ийг зөвхөн localhost-д bind хийдэг; Nginx HTTPS домэйн руу proxy хийнэ. Nginx config нь index-лэлтээс сэргийлэх `X-Robots-Tag` өгдөг ч энэ нь нэвтрэх хамгаалалт биш. Domain өөрчлөгдөх эсвэл certificate renewal тохиргоо нэмэх бол `deploy/nginx-production.conf`-ийг хамт шинэчил.
+TLS sertifikatini olishdan oldin HTTP bootstrap site’ni yoqing:
+
+```bash
+sudo install -d -m 0755 /var/www/letsencrypt /var/www/titan-crm/releases && sudo install -m 0644 deploy/nginx-bootstrap.conf /etc/nginx/sites-available/titan-crm && sudo ln -s /etc/nginx/sites-available/titan-crm /etc/nginx/sites-enabled/titan-crm && sudo nginx -t && sudo systemctl reload nginx
+```
+
+TLS sertifikatini olgach, Nginx production sozlamasini yoqing va static fayllarni joylang:
+
+```bash
+sudo certbot certonly --webroot --webroot-path /var/www/letsencrypt --non-interactive --agree-tos --email titanserviceuz@gmail.com --cert-name titan-crm.hh-academy.uz --domain titan-crm.hh-academy.uz && sudo install -m 0644 deploy/nginx-production.conf /etc/nginx/sites-available/titan-crm && sudo nginx -t && sudo systemctl reload nginx && sudo bash deploy/deploy-static.sh && curl --fail --silent --show-error https://titan-crm.hh-academy.uz/health
+```
+
+Keyingi frontend versiyasini joylash uchun `npm ci && npm run build && sudo bash deploy/deploy-static.sh` bajaring. Deploy skripti yangi build uchun alohida release papkasini yaratib, `current` symlinkini atomik almashtiradi; Nginx’ni qayta ishga tushirish yoki port sozlash talab qilinmaydi. Nginx qidiruv tizimlariga indekslamaslik headerini yuboradi, lekin bu kirish himoyasi emas.
 
 ## Tuzilma
 

@@ -30,7 +30,7 @@ Bu fayl `reactjs.md` va `TZ_docs.md`ni almashtirmaydi. Hujjatlardagi admin CRM d
 | Pilot hudud, markaz, ish vaqti, javob muddati, avans, komissiyalar, bildirishnoma | `/settings` |
 | Global qidirish, navbat bildirishnomalari, profil/demo reset, mobile drawer | AppShell |
 | Native dialog fokus ushlash/qaytarish/Escape, label/xato/status matnlari | Shared UI |
-| Development/production alohida muhitlar, route splitting, SPA hosting | Vite, `.env.*`, Nginx, Docker, CI |
+| Development/production alohida muhitlar, route splitting, SPA hosting | Vite, `.env.*`, Nginx, CI |
 
 ## Boshqa kompyuterda tekshirish
 
