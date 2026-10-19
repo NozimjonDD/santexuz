@@ -1,0 +1,30 @@
+[Unit]
+Description=@@APP_NAME@@ Django / Gunicorn
+Requires=@@APP_NAME@@.socket
+After=network.target postgresql.service
+
+[Service]
+Type=notify
+NotifyAccess=main
+User=@@APP_USER@@
+Group=@@APP_USER@@
+WorkingDirectory=@@APP_ROOT@@/current
+EnvironmentFile=/etc/@@APP_NAME@@/production.env
+Environment=PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
+ExecStart=@@APP_ROOT@@/current/.venv/bin/gunicorn --config @@APP_ROOT@@/current/deploy/ubuntu/gunicorn.conf.py project_backend.wsgi:application
+Restart=on-failure
+RestartSec=5
+KillMode=mixed
+TimeoutStopSec=60
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=@@APP_ROOT@@/shared
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=@@APP_NAME@@
+
+[Install]
+WantedBy=multi-user.target

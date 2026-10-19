@@ -1,0 +1,26 @@
+import django.db.models.deletion
+from django.conf import settings
+from django.db import migrations, models
+
+
+class Migration(migrations.Migration):
+    initial = True
+    dependencies = [migrations.swappable_dependency(settings.AUTH_USER_MODEL)]
+    operations = [
+        migrations.CreateModel(
+            name="AuditEvent",
+            fields=[
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("action", models.CharField(max_length=100)),
+                ("object_type", models.CharField(max_length=100)),
+                ("object_id", models.CharField(max_length=100)),
+                ("payload", models.JSONField(blank=True, default=dict)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("actor", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name="audit_events", to=settings.AUTH_USER_MODEL)),
+            ],
+            options={
+                "ordering": ("-created_at", "-id"),
+                "indexes": [models.Index(fields=["object_type", "object_id"], name="audit_object_idx"), models.Index(fields=["created_at"], name="audit_created_idx")],
+            },
+        ),
+    ]

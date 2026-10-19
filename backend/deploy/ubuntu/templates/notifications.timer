@@ -1,0 +1,11 @@
+[Unit]
+Description=@@APP_NAME@@ outbox schedule
+
+[Timer]
+OnBootSec=30s
+OnUnitInactiveSec=10s
+AccuracySec=1s
+Unit=@@APP_NAME@@-notifications.service
+
+[Install]
+WantedBy=timers.target
