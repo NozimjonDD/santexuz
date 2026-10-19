@@ -1,0 +1,32 @@
+name: CRM checks
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Dependencies
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+      - name: Types, business rules, production build
+        run: npm run check
+      - name: Browser dependencies
+        run: npx playwright install --with-deps chromium webkit
+      - name: Desktop and mobile workflows
+        run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-results
+          path: test-results/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: production-dist
+          path: dist/
