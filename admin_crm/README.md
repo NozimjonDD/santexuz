@@ -2,7 +2,7 @@
 
 Marhamat pilotidagi santexnika xizmat markazi uchun o‘zbekcha React admin panel. Talablar: [`docs/reactjs.md`](docs/reactjs.md) va [`docs/TZ_docs.md`](docs/TZ_docs.md).
 
-**Holat:** statik, interaktiv demo. API, login, Telegram, haqiqiy to‘lov, xarita va PDF generator ulanmagan. Production build ham **DEMO** belgisi va mock ma’lumotlar bilan ishlaydi; bu backendli ishlab turgan xizmat emas. Mini App ekranlari ushbu CRM doirasiga kirmaydi.
+**Holat:** statik, interaktiv demo. API, login, Telegram, haqiqiy to‘lov, xarita va PDF generator ulanmagan. Production build ham **DEMO** belgisi va mock ma’lumotlar bilan ishlaydi; bu backendli ishlab turgan xizmat emas. Maxfiy yoki haqiqiy mijoz ma’lumotlarini kiritmang. Demo ommaga ochiq bo‘lishi mumkin; unda autentifikatsiya yo‘q. Mini App ekranlari ushbu CRM doirasiga kirmaydi.
 
 ## Muhim: bu kompyuterda ishga tushirmang
 
@@ -57,6 +57,18 @@ docker compose up --build -d
 ```
 
 Manzil: `http://127.0.0.1:8080`. Konteyner unprivileged Nginx, read-only filesystem va vaqtinchalik yoziladigan kataloglar bilan sozlangan. Tashqi serverda TLS terminatsiyasi/reverse proxy alohida o‘rnatiladi. GitHub Actions kodi typecheck, biznes testlari, production build va desktop/mobil Playwright tekshiruvlarini bajarish uchun yozilgan; bu yerda hali bajarilmagan.
+
+### Ubuntu server: `admin.titan-service.hh-academy.uz`
+
+Bu frontend backend API’siga ulanmagan demo holatida qoladi. Unda faqat sun’iy ma’lumotlar bor; haqiqiy mijoz ma’lumotlarini kiritmang va uni amaldagi admin tizimi sifatida ishlatmang. Backend o‘z socketidan foydalanadi, CRM Docker konteyneri esa faqat `127.0.0.1:8081`da tinglaydi.
+
+DNS’da `admin.titan-service.hh-academy.uz` A yozuvi server IP manziliga qaragan, 80/443 portlari ochiq bo‘lishi kerak. Backend Nginx sozlamalariga tegmasdan frontend uchun alohida site sozlanadi. Repo ildizidan (`admin_crm/` papkasining ota papkasidan):
+
+```bash
+cd admin_crm && sudo install -d -m 0755 /var/www/letsencrypt && sudo install -m 0644 deploy/nginx-bootstrap.conf /etc/nginx/sites-available/admin-crm && sudo ln -s /etc/nginx/sites-available/admin-crm /etc/nginx/sites-enabled/admin-crm && sudo nginx -t && sudo systemctl reload nginx && sudo certbot certonly --webroot --webroot-path /var/www/letsencrypt --non-interactive --agree-tos --email titanserviceuz@gmail.com --cert-name admin.titan-service.hh-academy.uz --domain admin.titan-service.hh-academy.uz && sudo install -m 0644 deploy/nginx-production.conf /etc/nginx/sites-available/admin-crm && sudo nginx -t && sudo systemctl reload nginx && docker compose up --build -d && curl --fail --silent --show-error https://admin.titan-service.hh-academy.uz/health
+```
+
+Docker Compose порт `8081`-ийг зөвхөн localhost-д bind хийдэг; Nginx HTTPS домэйн руу proxy хийнэ. Nginx config нь index-лэлтээс сэргийлэх `X-Robots-Tag` өгдөг ч энэ нь нэвтрэх хамгаалалт биш. Domain өөрчлөгдөх эсвэл certificate renewal тохиргоо нэмэх бол `deploy/nginx-production.conf`-ийг хамт шинэчил.
 
 ## Tuzilma
 
