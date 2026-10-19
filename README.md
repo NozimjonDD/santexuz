@@ -50,6 +50,10 @@ Admin orqali markaz manzili/telefon/ish vaqti, avans, komissiyalar, xizmatlar/ta
 
 Ubuntu production uchun [Nginx + systemd + PostgreSQL yo‘riqnomasi](deploy/ubuntu/README.md) va [sozlanadigan konfiguratsiya](deploy/ubuntu/deploy.ini.example) tayyorlandi. Alohida OS/runtime/migratsiya akkauntlari, HTTPS, yopiq fayllar, outbox/deadline timerlari, release oldidan zaxira va kod rollback mavjud. Bu deployment qo‘shimchasi hali Ubuntu serverda bajarilmadi. Eski `server-side-[deployment]` namunalari chiqarildi.
 
+### Barcha modellarga mock ma’lumot
+
+Development/test bazasida `python manage.py seed_mock` loyiha modellariga kamida 20 tadan bog‘langan namuna qo‘shadi. `ServiceCenter` singleton bo‘lgani uchun 1 ta; User va moliyaviy tarix jadvallarida bog‘lanishlar sabab son ko‘proq. Bir xil batch qayta yaratilmaydi, haqiqiy Telegram xabarlari yuborilmaydi, localhost **Sinov akkaunti** 20 ta namunaviy buyurtmani ko‘radi. Productionda buyruq yopiq. [To‘liq qamrov va ishlatish](docs/mock_seed.md).
+
 ### Telegramsiz lokal ko‘rish
 
 `project_backend.settings.development` rejimida `DEV_LOCAL_LOGIN=true` (default) bo‘lsa, `http://127.0.0.1:8000/` yoki `http://localhost:8000/` da **Sinov akkaunti** tugmasi chiqadi. Alohida `__santex_local_preview__` mijoz akkaunti yaratiladi: u admin/hamkor huquqiga ega emas, Telegramga bog‘lanmagan va sinov telefoni bilan ishlaydi. Shu akkaunt orqali yuborilgan buyurtmalar bazada saqlanadi. Hudud/guruhlar uchun avval `seed_pilot` kerak; haqiqiy tarif va yuridik ma’lumotlar avtomatik kiritilmaydi.

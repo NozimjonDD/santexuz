@@ -15,9 +15,42 @@ UI yozilgan bosqichda dastur ishga tushirilmadi. Keyingi 2026-10-18 tekshiruvida
 - `static/miniapp/ui.js`: escaped HTML, ikonka va umumiy komponentlar.
 - `static/miniapp/i18n.js`: UZ/RU/EN matnlar, UZS, Asia/Tashkent sanalari.
 - `static/miniapp/demo.js`: faqat lokal namoyish uchun xayoliy ma’lumotlar, bazaga yozmaydi.
+- `static/miniapp/refresh.css`: minimal uslub, glass aksentlar, uzun matn va kichik ekran qoidalari.
+- `static/miniapp/visuals.js`: xizmat ma’nosiga mos rasm/ikonka, hero fotosi, hamkorning o‘z surati yoki bosh harflari.
+- `static/miniapp/images/`: mahalliy foto uslubidagi hero va to‘rt xizmat uchun umumiy atlas; [manba va promptlar](../static/miniapp/images/README.md).
+- `scripts/prepare_miniapp_images.py`: boshqa kompyuterda yengil WebP nusxalarini yaratish; `apps/common/miniapp_assets.py` tayyor nusxa bo‘lmasa PNG tanlaydi.
 - `static/miniapp/fonts.css` va `fonts/`: mahalliy Manrope; tashqi font/CDN talab qilinmaydi.
 
 Framework, npm to‘plami yoki frontend build talab qilinmaydi. Productionda Django static fayllari odatiy `collectstatic`/web-server jarayoni bilan tarqatiladi. `.gitignore` ichida loyiha Mini App aktivlari va domen migratsiyalari uchun istisnolar qo‘shildi; generatsiya qilingan boshqa staticlar chiqarib tashlanadi.
+
+## 2026-10-19: Glassmorphism + minimal UI
+
+30–40% — vizual yo‘nalish ulushi: shaffof/xiralashgan header, qidiruv, hero matn paneli va pastki navigatsiya. Oddiy matn, smeta, moliya va formalar ko‘proq yopiq, toza fonda qoladi. Bu raqam matn opacity qiymati emas; barcha yozuvlar to‘liq xira. Glass fonlarning yengil shaffofligi, nozik chegaralar, yumshoq soyalar va lokal fotografiya ko‘k rangli mavjud brend bilan birlashtirildi. `backdrop-filter` bo‘lmagan webview’da yopiq fon chiqadi; reduced transparency/motion va forced-colors uchun alohida qoidalar bor.
+
+| Avvalgi muammo | O‘zgarish |
+| --- | --- |
+| “O‘rnatish/almashtirish” karta chegarasidan chiqardi | Grid/flex elementlarida `min-inline-size:0`, sarlavhada normal wrap va `overflow-wrap:anywhere`; balandlik matnga mos, satrlarni kesish yo‘q |
+| Xizmat rasmi/ikonkasi ro‘yxat indeksiga bog‘liq edi | `code` va uch tildagi nomdan semantik heating/installation/pipes/repair tanlanadi |
+| Faqat piktogrammali bir xil xizmat kartalari | Foto atlas, alohida o‘qiladigan nom paneli va ikonka; bir atlas so‘rovi kartalar orasida bo‘lishiladi |
+| Uzun narx/status/manzil bilan tor qatorlar | Moslashuvchan key-value grid, tugmalar wrap, tor ekranda bir ustun va uzun matn uchun o‘rash |
+| Singan yoki bo‘sh hamkor rasmi | API rasmi asinxron/lazy yuklanadi; xatoda o‘z bosh harflari chiqadi |
+| Profil bitta uzun karta va forma ko‘rinishida edi | Ism/rol/telefon holati, tahrirlash va yordam alohida; 850px dan ikki ustun, mobil ekranda bir ustun |
+| Qorong‘i rejimda och ko‘k tugmalardagi oq belgilar | Brand ustidagi yozuvlar `--button-text` dan olinadi; yakunlangan timeline belgisi ham dark fonga mos |
+| Katta shrift yoki tarjimada navigatsiya balandligi ortishi | Pastki bo‘shliq, sticky hisob va toast joyi navigatsiyaning haqiqiy balandligidan olinadi; `ResizeObserver` bilan yangilanadi |
+
+Hero, xizmatlar va profil sahifasi yangilandi. Profilning asosiy amali — saqlash; tasdiqlanmagan telefon holatida mavjud kontakt ulashish va yangilash amallari bor. Ism/familiya/til API maydonlari saqlandi. Yangi matnlar UZ/RU/EN uchun qo‘shildi. Asosiy so‘rov tugmasi, shoshilinch chaqiruv, rol amallari va API shartnomasi saqlandi. Generatsiya qilingan usta tasviri faqat bezak: haqiqiy hamkor sifatida ko‘rsatilmaydi.
+
+PNG manbalar ishlaydi. Mobil tarmoq uchun boshqa kompyuterda `python scripts/prepare_miniapp_images.py` mavjud Pillow bilan hero 960×640 va atlas 1024×1024 WebP nusxalarini tayyorlaydi; manbalar o‘zgartirilmaydi. Django developmentda mavjud nusxani, productionda `collectstatic` orqali tarqatishga tayyor nusxani tanlaydi. Hali tayyorlanmagan faylga havola chiqarilmaydi. Hajm tejalishi haqiqiy kodlashdan so‘ng buyruq natijasida ko‘rinadi; bu kompyuterda kodlash bajarilmadi.
+
+`scripts/miniapp_visuals.test.mjs` xizmatni tartib/tilga bog‘lamaslik, uzun/zararli nomlarni xavfsiz chiqarish, haqiqiy avatar/bosh harf tanlash va aktivlar formati uchun testlarni beradi. Umumiy frontend parse tekshiruvi `visuals.js` ni ham qamraydi. Bu yangi testlar **bajarilmagan**. Bu bosqichda ilova, brauzer, build yoki dev server ishga tushirilmadi.
+
+Boshqa kompyuterda tayyor Python muhiti va Node.js 22+ bilan:
+
+```bash
+python scripts/prepare_miniapp_images.py && python manage.py test apps.common.test_miniapp_assets --settings=project_backend.settings.test --noinput && node --test scripts/miniapp_api.test.mjs scripts/miniapp_visuals.test.mjs
+```
+
+Qo‘lda ko‘ring: 320/360/390/650/768/850/1280px, UZ/RU/EN, 200% matn, Telegram light/dark; kategoriya uzun nomlari, ism/manzil, katta pul summasi, status, profilni saqlash, forma/dialog va pastki navigatsiya. Glass qo‘llanmaydigan holat va rasm 404 bo‘lganda ham tekshiring. Productionda tasvir tayyorlash `collectstatic` dan oldin bajariladi. Source ko‘rigi ekrandagi natija tasdiqlangani degani emas.
 
 ## Ekranlar xaritasi
 

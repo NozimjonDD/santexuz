@@ -94,6 +94,14 @@ Backend tekshirish buyrug‘i (virtual muhit faollashtirilgan):
 python scripts/verify.py
 ```
 
+## 2026-10-19 UI yangilanishi (hali bajarilmagan)
+
+Yengil glass aksentlar, minimal kartalar, lokal foto aktivlar, yangi profil tartibi va uzun matnlar uchun moslashuv qoidalari qo‘shildi. Qorong‘i rejimdagi brand tugma/indikatorlari kontrasti yaxshilandi; katta shrift/uzun tarjimada navigatsiya balandligiga mos kontent bo‘shlig‘i qo‘shildi. `miniapp_visuals.test.mjs` yozildi; umumiy module parse testi `visuals.js` bilan kengaydi. WebP tayyorlash skripti va mavjud/collected faylga qarab PNG/WebP tanlovining 6 ta testi (`apps/common/test_miniapp_assets.py`) qo‘shildi. Boshqa kompyuterda [Dizayn va qabul tafsiloti](miniapp_ui.md) dagi buyruq bajariladi; qo‘lda 320–1280px, UZ/RU/EN, 200% matn va Telegram light/dark tekshiriladi. UI, yangi testlar, WebP kodlash va brauzerdagi natija yozish kompyuterida bajarilmadi.
+
+## 2026-10-19 mock seed qo‘shimchasi (hali bajarilmagan)
+
+`seed_mock` va `apps/common/test_mock_seed.py` qo‘shildi: barcha loyiha modellari, pul balansi, bir xil batchni takrorlamaslik, production cheklovi, mavjud akkaunt/markazni saqlash va xatoda DB/fayl rollback uchun 7 ta test. [Ishlatish va aniq sonlar](mock_seed.md). Bu yangi testlar yozish kompyuterida bajarilmadi; avvalgi 70 test natijasiga kirmaydi.
+
 ## Ubuntu production qo‘shimchasi (hali bajarilmagan)
 
 `deploy/ubuntu/README.md` serverda o‘rnatish va qabul tekshiruvini beradi. Production uchun PostgreSQL majburiy, umumiy cache jadvali, HTTPS proxy chegarasi, alohida migrator, private/static ruxsatlari va journald loglari qo‘shildi. `apps/common/tests.py` da DB/cache uzilganda maxfiy tafsilotlarsiz 503 hamda DBdan mustaqil liveness; `apps/tg_bot/tests.py` da webhookni faqat aniq `--register` bilan sozlash va pending update’larni saqlash uchun testlar yozildi.
