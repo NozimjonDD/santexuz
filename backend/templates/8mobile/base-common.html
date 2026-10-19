@@ -7,10 +7,10 @@
   <title>{% block page_title %}Santex{% endblock %}</title>
   <link rel="stylesheet" href="{% static 'miniapp/fonts.css' %}">
   <link rel="stylesheet" href="{% static 'miniapp/app.css' %}">
-  <link rel="stylesheet" href="{% static 'miniapp/refresh.css' %}?v=20261019">
+  <link rel="stylesheet" href="{% static 'miniapp/refresh.css' %}?v=20261019-toolbar">
   <script src="https://telegram.org/js/telegram-web-app.js" defer></script>
   <meta name="theme-color" content="#0b5fd8">
-  <script type="module" src="{% static 'miniapp/app.js' %}?v=20261019"></script>
+  <script type="module" src="{% static 'miniapp/app.js' %}?v=20261019-toolbar"></script>
 </head>
 <body data-local-preview="{{ local_preview_enabled|yesno:'true,false' }}"
       data-miniapp-hero="{% static miniapp_images.hero|default:'miniapp/images/plumbing-hero.png' %}"

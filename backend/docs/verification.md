@@ -98,6 +98,14 @@ python scripts/verify.py
 
 Yengil glass aksentlar, minimal kartalar, lokal foto aktivlar, yangi profil tartibi va uzun matnlar uchun moslashuv qoidalari qo‘shildi. Qorong‘i rejimdagi brand tugma/indikatorlari kontrasti yaxshilandi; katta shrift/uzun tarjimada navigatsiya balandligiga mos kontent bo‘shlig‘i qo‘shildi. `miniapp_visuals.test.mjs` yozildi; umumiy module parse testi `visuals.js` bilan kengaydi. WebP tayyorlash skripti va mavjud/collected faylga qarab PNG/WebP tanlovining 6 ta testi (`apps/common/test_miniapp_assets.py`) qo‘shildi. Boshqa kompyuterda [Dizayn va qabul tafsiloti](miniapp_ui.md) dagi buyruq bajariladi; qo‘lda 320–1280px, UZ/RU/EN, 200% matn va Telegram light/dark tekshiriladi. UI, yangi testlar, WebP kodlash va brauzerdagi natija yozish kompyuterida bajarilmadi.
 
+## 2026-10-19 til menyusi (hali bajarilmagan)
+
+Headerdagi til `select`i light/dark mavzuga mos menu-button bilan almashtirildi. Native ro‘yxatning ajralib turgan rangi yo‘q; to‘liq til nomlari, tanlangan til belgisi, moslashuvchan panel, keyboard/fokus va busy holati qo‘shildi. `scripts/miniapp_language_picker.test.mjs` ichida 4 ta controller testi yozildi va umumiy frontend parse tekshiruviga yangi modul qo‘shildi. Bu testlar va brauzerdagi ko‘rik yozish kompyuterida bajarilmadi. Boshqa kompyuterda `node --test scripts/miniapp_api.test.mjs scripts/miniapp_language_picker.test.mjs`; haqiqiy Tab/Shift+Tab va Telegram webview ko‘rigi qo‘lda bajariladi. [UI tafsiloti](miniapp_ui.md).
+
+## 2026-10-19 tor toolbar (hali bajarilmagan)
+
+Yuqori panelga tabiiy qator almashishi, pastki navigatsiyaga teng grid, mobil qisqa nomlar va tekis ikonka qatorlari qo‘shildi. Yozuvlar endi harfma-harf bo‘linmaydi. Til/shrift/kenglikka qarab haqiqiy yozuv kengligi o‘lchanadi; sig‘masa navigatsiya qo‘shimcha qatorga o‘tadi va kontent bo‘shlig‘i balandlikka moslashadi. Mavjud frontend parse testi o‘zgargan modullarni qamraydi; yangi UI testi yozilmadi. Testlar va vizual ko‘rik bu kompyuterda bajarilmadi. Boshqa kompyuterda `node --test scripts/miniapp_api.test.mjs`; qo‘lda kichik telefon, uch til/rol va 200% matn tekshiriladi. [Moslashuv qoidalari](miniapp_ui.md).
+
 ## 2026-10-19 mock seed qo‘shimchasi (hali bajarilmagan)
 
 `seed_mock` va `apps/common/test_mock_seed.py` qo‘shildi: barcha loyiha modellari, pul balansi, bir xil batchni takrorlamaslik, production cheklovi, mavjud akkaunt/markazni saqlash va xatoda DB/fayl rollback uchun 7 ta test. [Ishlatish va aniq sonlar](mock_seed.md). Bu yangi testlar yozish kompyuterida bajarilmadi; avvalgi 70 test natijasiga kirmaydi.

@@ -17,6 +17,7 @@ UI yozilgan bosqichda dastur ishga tushirilmadi. Keyingi 2026-10-18 tekshiruvida
 - `static/miniapp/demo.js`: faqat lokal namoyish uchun xayoliy ma’lumotlar, bazaga yozmaydi.
 - `static/miniapp/refresh.css`: minimal uslub, glass aksentlar, uzun matn va kichik ekran qoidalari.
 - `static/miniapp/visuals.js`: xizmat ma’nosiga mos rasm/ikonka, hero fotosi, hamkorning o‘z surati yoki bosh harflari.
+- `static/miniapp/language-picker.js`: header til menyusi, klaviatura/fokus, tanlangan til va so‘rov holati.
 - `static/miniapp/images/`: mahalliy foto uslubidagi hero va to‘rt xizmat uchun umumiy atlas; [manba va promptlar](../static/miniapp/images/README.md).
 - `scripts/prepare_miniapp_images.py`: boshqa kompyuterda yengil WebP nusxalarini yaratish; `apps/common/miniapp_assets.py` tayyor nusxa bo‘lmasa PNG tanlaydi.
 - `static/miniapp/fonts.css` va `fonts/`: mahalliy Manrope; tashqi font/CDN talab qilinmaydi.
@@ -51,6 +52,28 @@ python scripts/prepare_miniapp_images.py && python manage.py test apps.common.te
 ```
 
 Qo‘lda ko‘ring: 320/360/390/650/768/850/1280px, UZ/RU/EN, 200% matn, Telegram light/dark; kategoriya uzun nomlari, ism/manzil, katta pul summasi, status, profilni saqlash, forma/dialog va pastki navigatsiya. Glass qo‘llanmaydigan holat va rasm 404 bo‘lganda ham tekshiring. Productionda tasvir tayyorlash `collectstatic` dan oldin bajariladi. Source ko‘rigi ekrandagi natija tasdiqlangani degani emas.
+
+## Til tanlash menyusi — 2026-10-19
+
+Headerdagi native `select` o‘rniga UZ/RU/EN kodi va to‘liq til nomlari bilan menyu qo‘shildi. Tanlangan til fon va check bilan belgilanadi. Panel yopiq fonli, mavjud light/dark tokenlarini oladi; OS/native ro‘yxatining alohida rangi ishlatilmaydi. Qatorlar kamida 54px, kenglik ekran va safe area bilan cheklangan; kichik balandlikda ichida scroll bor.
+
+Trigger `aria-expanded`/`aria-haspopup`, qatorlar `menuitemradio`/`aria-checked` bilan berildi. Enter/Space — ochish/tanlash; ↑/↓ va Home/End — yurish; Escape — yopish va fokusni qaytarish; Tab — tabiiy tartibda chiqish. Tashqariga bosish, fokusning tashqariga chiqishi, marshrut almashishi yoki dialog ochilishi menyuni yopadi. Telegram BackButton ko‘rinadigan ekranlarda u avval ochiq til menyusini yopadi. Header orqali til o‘zgarganda fokus triggerda qoladi; til darhol ko‘rinadi, mavjud akkauntga PATCH davomida takroriy tanlash bloklanadi. Til saqlash/onboarding/profilning mavjud oqimlari saqlandi.
+
+`scripts/miniapp_language_picker.test.mjs` 4 ta controller testi beradi: keyboard/wrap/Escape, yopish/fokus, tanlash/busy holati va xatodan keyin qayta ochish. Ular brauzerning native tab/fokus mexanizmi yoki vizual sifatni tasdiqlamaydi. Testlar **bu kompyuterda bajarilmadi**. Boshqa kompyuterda:
+
+```bash
+node --test scripts/miniapp_api.test.mjs scripts/miniapp_language_picker.test.mjs
+```
+
+Qo‘lda: Telegram light/dark, 320px va 200% matn, UZ/RU/EN; menyuni sichqoncha/touch/klaviaturada ochish, tanlash, triggerga qayta bosib yopish va Tab/Shift+Tab bilan chiqishni ko‘ring. Productionda odatiy `collectstatic` va deploy jarayoni bajariladi.
+
+## Tor ekranlarda toolbar — 2026-10-19
+
+Pastki navigatsiyaning ikonkalari va yozuvlari umumiy gridga tekislandi; markazdagi plus endi boshqa ikonkalarni pastga/yuqoriga surmaydi. Mobil uchun UZ/RU/EN qisqa nomlari bor (`Buyurtma`, `График`, `Delivery`), keng ekranda to‘liq nom chiqadi. Har bir havolaning `aria-label` va `title` qiymati to‘liq nomni saqlaydi. Harfma-harf `anywhere` wrap o‘rniga so‘z bir butun qoladi; ellipsis yoki matnni yashirish qo‘shilmadi. 360px gacha yon bo‘shliq kichrayadi, label shrifti 11px bo‘lib qoladi.
+
+`observeNavigation()` joriy shrift bilan yozuvlarning haqiqiy tabiiy kengligini o‘lchaydi. Bir qatorda sig‘masa, ustunlar kamayadi va tugmalar qo‘shimcha qatorga o‘tadi; 5 tugma 4+1 o‘rniga 3+2, 4 tugma 3+1 o‘rniga 2+2 bo‘linadi. Kenglik, til va yangi shrift yuklanishida hisob yangilanadi. Pastdagi kontent, sticky hisob va toast bo‘shlig‘i yangilangan balandlikdan olinadi. Yuqori panelda brend va boshqaruvlar kerak bo‘lsa alohida qatorga o‘tadi; brend/tagline harfga bo‘linmaydi, til/bildirishnoma tugmalari o‘lchami saqlanadi.
+
+Bu o‘zgarishlar fayllarni o‘qib ko‘rib chiqildi; brauzer yoki testlar yozish kompyuterida bajarilmadi. Boshqa kompyuterda mavjud frontend parse/API testlari bajariladi; qo‘lda 280/320/360/390/650px, uch til, uch rol va 200% matn kattaligida header, navigatsiya, oxirgi kontent va toastni ko‘ring. Keng ekranda ham kattalashtirilgan matn bilan navigatsiyani tekshiring.
 
 ## Ekranlar xaritasi
 

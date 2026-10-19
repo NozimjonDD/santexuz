@@ -11,7 +11,7 @@ const originalDocument=globalThis.document;
 const originalLocation=globalThis.location;
 const json=(body,status=200)=>new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json'}});
 test('every frontend module parses without a bundler',async()=>{
- for(const name of ['api','app','demo','i18n','ui','visuals']){
+ for(const name of ['api','app','demo','i18n','ui','visuals','language-picker']){
   const source=await readFile(new URL(`../static/miniapp/${name}.js`,import.meta.url),'utf8');
   const result=spawnSync(process.execPath,['--input-type=module','--check'],{input:source,encoding:'utf8'});
   assert.equal(result.status,0,`${name}.js: ${result.stderr}`);

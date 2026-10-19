@@ -3,10 +3,31 @@
 <a class="skip-link" href="#screen">Kontentga o‘tish</a>
 <div class="app-shell">
   <header class="app-header">
-    <a href="#home" class="brand" aria-label="Santex"><span class="brand-mark" aria-hidden="true">S</span><span>Santex<small>Marhamat · Mini App</small></span></a>
+    <a href="#home" class="brand" aria-label="Santex"><span class="brand-mark" aria-hidden="true">S</span><span><span class="brand-name">Santex</span><small>Marhamat · Mini App</small></span></a>
     <div class="header-actions">
-      <label class="sr-only" for="language">Til / Язык / Language</label>
-      <select id="language" class="language-select"><option value="uz">UZ</option><option value="ru">RU</option><option value="en">EN</option></select>
+      <div id="language-picker" class="language-picker">
+        <button id="language" class="language-select" type="button" aria-label="Til: O‘zbekcha" aria-haspopup="menu" aria-expanded="false" aria-controls="language-menu">
+          <span id="language-code" aria-hidden="true">UZ</span>
+          <svg class="language-chevron" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m4 6 4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div id="language-popover" class="language-popover" hidden>
+          <p id="language-menu-title" class="language-menu-title">Qulay tilni tanlang</p>
+          <div id="language-menu" class="language-menu" role="menu" aria-labelledby="language-menu-title">
+            <button type="button" class="language-option" role="menuitemradio" aria-checked="true" data-language="uz" tabindex="-1">
+              <span class="language-option-code" aria-hidden="true">UZ</span><span class="language-name" lang="uz">O‘zbekcha</span>
+              <svg class="language-check" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m4 10 4 4 8-8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <button type="button" class="language-option" role="menuitemradio" aria-checked="false" data-language="ru" tabindex="-1">
+              <span class="language-option-code" aria-hidden="true">RU</span><span class="language-name" lang="ru">Русский</span>
+              <svg class="language-check" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m4 10 4 4 8-8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <button type="button" class="language-option" role="menuitemradio" aria-checked="false" data-language="en" tabindex="-1">
+              <span class="language-option-code" aria-hidden="true">EN</span><span class="language-name" lang="en">English</span>
+              <svg class="language-check" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m4 10 4 4 8-8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
       <button class="icon-button" id="notifications-button" type="button" aria-label="Bildirishnomalar"><span id="bell-icon" aria-hidden="true"></span><span id="notification-dot" class="notification-dot" hidden></span></button>
     </div>
   </header>
