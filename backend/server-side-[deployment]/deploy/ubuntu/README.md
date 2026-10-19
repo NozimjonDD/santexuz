@@ -12,6 +12,8 @@ Domenning A yozuvi server IP manziliga qarasin. AAAA yozuvi bo‘lsa IPv6 ham sh
 
 Standart nom `santex`; boshqa nom tanlansa `/etc/santex` o‘rniga o‘z nomingizni yozing va barcha deploy buyruqlariga `--config /etc/<nom>/deploy.ini` ni **subcommanddan oldin** qo‘shing.
 
+The checked-in sample configuration is [`deploy.ini.example`](deploy.ini.example); for this deployment it contains `titan-service.hh-academy.uz` and `titanserviceuz@gmail.com`. Bootstrap renders [`production.env.example`](production.env.example) into `/etc/santex/production.env` and generates the Django, database, and webhook secrets there. No production secret or generated `.env` belongs in Git.
+
 ```bash
 sudo install -d -m 0750 /etc/santex && sudo install -m 0600 deploy/ubuntu/deploy.ini.example /etc/santex/deploy.ini && sudoedit /etc/santex/deploy.ini && sudo python3 deploy/ubuntu/deploy.py bootstrap
 ```

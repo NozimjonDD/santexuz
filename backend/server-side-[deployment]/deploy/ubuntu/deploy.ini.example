@@ -1,0 +1,9 @@
+[deployment]
+# Ubuntu 24.04 LTS deployment sample for titan-service.hh-academy.uz.
+# Review app_name, app_user and app_root before using this configuration.
+# Lowercase names only; app_root must be a dedicated directory under /srv or /opt.
+app_name = santex
+app_user = santex
+app_root = /srv/santex
+domain = titan-service.hh-academy.uz
+certificate_email = titanserviceuz@gmail.com

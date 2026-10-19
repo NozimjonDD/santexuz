@@ -1,8 +1,0 @@
-[deployment]
-# Ubuntu 24.04 LTS. Change these before running bootstrap on the server.
-# Lowercase names only; app_root must be a dedicated directory under /srv or /opt.
-app_name = santex
-app_user = santex
-app_root = /srv/santex
-domain = miniapp.example.com
-certificate_email = admin@example.com

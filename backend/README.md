@@ -44,11 +44,11 @@ python manage.py createsuperuser
 
 Admin orqali markaz manzili/telefon/ish vaqti, avans, komissiyalar, xizmatlar/tariflar, hamkor akkauntlari/profillari va uz/ru/en shartnoma andozalarini kiriting. `seed_pilot` faqat Marhamat hududi va TZdagi to‘rtta xizmat guruhini yaratadi; haqiqiy narx yoki yuridik matn yaratmaydi.
 
-`ROUTING_BASE_URL` OSRM-compatible routing xizmatining asosiy manzili bo‘lishi kerak. Bu qiymat bo‘lmasa, yakuniy smeta taxminiy yo‘l vaqti bilan chiqarilmaydi: API konfiguratsiya xatosini qaytaradi. PDF uchun `CONTRACT_FONT_PATH` ga o‘zbekcha/ruscha belgilarni qo‘llaydigan TTF shriftning mutlaq yo‘lini bering, masalan Linuxdagi DejaVu Sans.
+`ROUTING_BASE_URL` OSRM-compatible routing xizmatining asosiy manzili bo‘lishi kerak. Bu qiymat bo‘lmasa, yakuniy smeta taxminiy yo‘l vaqti bilan chiqarilmaydi: API konfiguratsiya xatosini qaytaradi. Shartnoma PDF’lari repodagi `assets/fonts/DejaVuSans.ttf` shriftidan foydalanadi; `CONTRACT_FONT_PATH` shu yo‘lga standartlangan va kerak bo‘lsa boshqa TTF faylga almashtirilishi mumkin. Shrift va tarqatish litsenziyasi `assets/fonts/` ichida saqlanadi.
 
 ## API va operatsiya
 
-Ubuntu production uchun [Nginx + systemd + PostgreSQL yo‘riqnomasi](deploy/ubuntu/README.md) va [sozlanadigan konfiguratsiya](deploy/ubuntu/deploy.ini.example) tayyorlandi. Alohida OS/runtime/migratsiya akkauntlari, HTTPS, yopiq fayllar, outbox/deadline timerlari, release oldidan zaxira va kod rollback mavjud. Bu deployment qo‘shimchasi hali Ubuntu serverda bajarilmadi. Eski `server-side-[deployment]` namunalari chiqarildi.
+Ubuntu production uchun [Nginx + systemd + PostgreSQL yo‘riqnomasi](server-side-[deployment]/deploy/ubuntu/README.md) va [sozlanadigan konfiguratsiya](server-side-[deployment]/deploy/ubuntu/deploy.ini.example) tayyorlandi. Alohida OS/runtime/migratsiya akkauntlari, HTTPS, yopiq fayllar, outbox/deadline timerlari, release oldidan zaxira va kod rollback mavjud. Bu deployment qo‘shimchasi hali Ubuntu serverda bajarilmadi. Eski `server-side-[deployment]` namunalari chiqarildi.
 
 ### Barcha modellarga mock ma’lumot
 
