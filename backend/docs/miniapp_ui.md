@@ -18,6 +18,7 @@ UI yozilgan bosqichda dastur ishga tushirilmadi. Keyingi 2026-10-18 tekshiruvida
 - `static/miniapp/refresh.css`: minimal uslub, glass aksentlar, uzun matn va kichik ekran qoidalari.
 - `static/miniapp/visuals.js`: xizmat ma’nosiga mos rasm/ikonka, hero fotosi, hamkorning o‘z surati yoki bosh harflari.
 - `static/miniapp/language-picker.js`: header til menyusi, klaviatura/fokus, tanlangan til va so‘rov holati.
+- `static/miniapp/automatic-session.js`: login panelisiz, bitta parallel avtomatik sessiya; bekor qilingan sessiya javoblarini rad etish.
 - `static/miniapp/images/`: mahalliy foto uslubidagi hero va to‘rt xizmat uchun umumiy atlas; [manba va promptlar](../static/miniapp/images/README.md).
 - `scripts/prepare_miniapp_images.py`: boshqa kompyuterda yengil WebP nusxalarini yaratish; `apps/common/miniapp_assets.py` tayyor nusxa bo‘lmasa PNG tanlaydi.
 - `static/miniapp/fonts.css` va `fonts/`: mahalliy Manrope; tashqi font/CDN talab qilinmaydi.
@@ -55,7 +56,7 @@ Qo‘lda ko‘ring: 320/360/390/650/768/850/1280px, UZ/RU/EN, 200% matn, Telegra
 
 ## Til tanlash menyusi — 2026-10-19
 
-Headerdagi native `select` o‘rniga UZ/RU/EN kodi va to‘liq til nomlari bilan menyu qo‘shildi. Tanlangan til fon va check bilan belgilanadi. Panel yopiq fonli, mavjud light/dark tokenlarini oladi; OS/native ro‘yxatining alohida rangi ishlatilmaydi. Qatorlar kamida 54px, kenglik ekran va safe area bilan cheklangan; kichik balandlikda ichida scroll bor.
+Headerdagi native `select` o‘rniga UZ/RU/EN kodi va to‘liq til nomlari bilan menyu qo‘shildi. Tanlangan til fon va check bilan belgilanadi. Panel yopiq fonli, mavjud light/dark tokenlarini oladi; OS/native ro‘yxatining alohida rangi ishlatilmaydi. Keyingi ixchamlashtirishda qatorlar kamida 44px, panel 248px gacha bo‘ldi; kenglik ekran va safe area bilan cheklangan, kichik balandlikda ichida scroll bor.
 
 Trigger `aria-expanded`/`aria-haspopup`, qatorlar `menuitemradio`/`aria-checked` bilan berildi. Enter/Space — ochish/tanlash; ↑/↓ va Home/End — yurish; Escape — yopish va fokusni qaytarish; Tab — tabiiy tartibda chiqish. Tashqariga bosish, fokusning tashqariga chiqishi, marshrut almashishi yoki dialog ochilishi menyuni yopadi. Telegram BackButton ko‘rinadigan ekranlarda u avval ochiq til menyusini yopadi. Header orqali til o‘zgarganda fokus triggerda qoladi; til darhol ko‘rinadi, mavjud akkauntga PATCH davomida takroriy tanlash bloklanadi. Til saqlash/onboarding/profilning mavjud oqimlari saqlandi.
 
@@ -74,6 +75,34 @@ Pastki navigatsiyaning ikonkalari va yozuvlari umumiy gridga tekislandi; markazd
 `observeNavigation()` joriy shrift bilan yozuvlarning haqiqiy tabiiy kengligini o‘lchaydi. Bir qatorda sig‘masa, ustunlar kamayadi va tugmalar qo‘shimcha qatorga o‘tadi; 5 tugma 4+1 o‘rniga 3+2, 4 tugma 3+1 o‘rniga 2+2 bo‘linadi. Kenglik, til va yangi shrift yuklanishida hisob yangilanadi. Pastdagi kontent, sticky hisob va toast bo‘shlig‘i yangilangan balandlikdan olinadi. Yuqori panelda brend va boshqaruvlar kerak bo‘lsa alohida qatorga o‘tadi; brend/tagline harfga bo‘linmaydi, til/bildirishnoma tugmalari o‘lchami saqlanadi.
 
 Bu o‘zgarishlar fayllarni o‘qib ko‘rib chiqildi; brauzer yoki testlar yozish kompyuterida bajarilmadi. Boshqa kompyuterda mavjud frontend parse/API testlari bajariladi; qo‘lda 280/320/360/390/650px, uch til, uch rol va 200% matn kattaligida header, navigatsiya, oxirgi kontent va toastni ko‘ring. Keng ekranda ham kattalashtirilgan matn bilan navigatsiyani tekshiring.
+
+## Mijoz uchun login panelisiz oqim — 2026-10-19
+
+Mijozning bosh sahifasi va so‘rov formasidan “Telegram orqali kirish / Qayta kirish” paneli va avtomatik login xatosi toasti olib tashlandi. Telegram `initData` mavjud bo‘lsa, server HMAC tekshiruvi bilan sessiya avtomatik yaratiladi. Faqat mavjud localhost/DEBUG/DEV_LOCAL_LOGIN chegarasida esa oldingi CSRF himoyali sinov akkaunti avtomatik ochiladi. Bir vaqtdagi amallar bitta login so‘rovini kutadi; muvaffaqiyatsiz urinish har renderda takrorlanmaydi. Logout yoki dizayn namoyishidan oldingi kechikkan javob sessiyani qayta ochmaydi.
+
+Oddiy production brauzerida Telegram ma’lumoti bo‘lmasa katalog, xizmatlar, yordam, so‘rovni to‘ldirish va mahalliy til sozlamasi ochiq. Bu anonim order API ochildi degani emas: buyurtma yuborish/shaxsiy ma’lumotlar uchun avtomatik tasdiqlangan sessiya, telefon va rozilik qoidalari saqlanadi. Mijozdan qo‘lda login so‘ralmaydi. Sessiya bo‘lmasa yuborish formani saqlab, qisqa xabar beradi; mavjud akkaunt yoki boshqa mijoz orderlari guestga berilmaydi. Brauzerni yopish bilan xotiradagi draft yo‘qolishi mumkin.
+
+Katalog va tariflar `anonymous:true` bilan olinadi; backendning public GET endpointlari JWT tekshirmaydi. Muddati o‘tgan token ochiq ma’lumotni bloklamaydi. Katalogni yangilashda oldingi muvaffaqiyatli public ma’lumot saqlanadi; xatolar resurs bo‘yicha ajratiladi. Markaz/do‘kon kabi yordamchi resurs xatosi butun bosh sahifaga texnik warning chiqarmaydi. Muhim katalog qismi yuklanmasa katalog yonida ixcham status chiqadi; narx yo‘q bo‘lsa taxminiy raqam qo‘yilmaydi.
+
+`apps/common/exception_handler.py` dagi oxirgi import public handler nomini almashtirib yuborishi tuzatildi. DRFning mavjud 4xx formati saqlandi; model validation 400, DB ulanish xatosi 503 JSON, kutilmagan xato 500 JSON qaytadi. Batafsil xato faqat server logida qoladi. Proxy HTML 5xx javobi frontendda JSON parse xatosi sifatida chiqarilmaydi. Server/proxy yoki DB amalda nosoz bo‘lsa, UI tuzatishi uning o‘rnini bosa olmaydi; `scripts/check_public_api.py` boshqa kompyuterdan aniq xato endpoint va statusni ko‘rsatadi, javob tanasini chiqarmaydi.
+
+Tugmalar min. 44px, odatiy matn 14px, yordamchi amallar 13px va avtomatik full-widthsiz qilindi. Til menyusi ham ixchamlashtirildi.
+
+Yangi testlar yozildi, **bajarilmadi**: 5 ta sessiya controller testi, 4 ta API client regressiyasi, backendda 3 ta JSON/error va 2 ta public/private chegara testi. Tayyor alohida test muhiti bilan boshqa kompyuterda:
+
+```bash
+python manage.py test apps.common.test_api_errors apps.api.v1.tests.test_public_access --settings=project_backend.settings.test --noinput && node --test scripts/miniapp_api.test.mjs scripts/miniapp_session.test.mjs scripts/miniapp_language_picker.test.mjs
+```
+
+Deploydan keyin serverning haqiqiy domeni bilan:
+
+```bash
+python scripts/check_public_api.py --base-url https://YOUR_DOMAIN
+```
+
+Production `DatabaseCache` ishlatadi: `santex_cache` jadvali va runtime DB rolida unga DML ruxsatlari kerak. Jadval yo‘q bo‘lsa throttle bosqichida katalog/login ham ishlamaydi; readiness tekshiruvi buni ham aniqlaydi. `createcachetable` odatiy deployning migrator bosqichida bajariladi. Bu serverdagi hozirgi xatoning tasdiqlangan sababi emas; FAIL statusi va log asosida tekshiriladi.
+
+Qo‘lda: yangi Telegram mijoz, telefon ulashish, formani yuborish, localhost avtomatik preview, Telegramsiz production brauzeri, muddati o‘tgan JWT, bitta katalog endpointi 500/HTML qaytargan holat va uch tilni ko‘ring. Bu kompyuterda tarmoq/prod API, testlar yoki ilova tekshirilmadi.
 
 ## Ekranlar xaritasi
 
@@ -134,7 +163,7 @@ Telegramda safeAreaInset/contentSafeAreaInset va ularning hodisalari, themeChang
 
 Faqat DEBUG + DEV_LOCAL_LOGIN + loopback host/ulanishda tepada ikki tugma bor:
 
-- **Sinov akkaunti**: avvalgi CSRF himoyali development login. Faqat mijoz; yuborilgan so‘rov bazaga yoziladi.
+- **Sinov akkaunti**: localhostda avtomatik ochiladigan CSRF himoyali development akkauntini qayta tanlaydi. Faqat mijoz; yuborilgan so‘rov bazaga yoziladi.
 - **Dizaynni ko‘rish**: namunaviy UI. Rolni Mijoz/Usta/Do‘kon qilib almashtirish mumkin. Doim ko‘rinadigan namoyish belgisi bor; hech bir yozish amali bajarilmaydi. Smeta va manzillar haqiqiy ma’lumot emas.
 
 Production HTMLda bu tugmalar va rol tanlash yo‘q. Demo fixture fayli statik aktiv, hech qanday maxfiy ma’lumot yo‘q; u haqiqiy API huquqini bermaydi. Tokenlar localStorage/sessionStoragega yozilmaydi. Faqat til/onboarding afzalligi lokal saqlanadi.

@@ -1,8 +1,9 @@
-import {Api} from './api.js';
+import {Api, ApiError} from './api.js';
 import {t, setLanguage, getLanguage, localized, money, date, dayNames, statusText, isoDate, localDateInput} from './i18n.js';
 import {escape as e, icon, tile, button, link, heading, back, kv, badge, empty, field, textarea, select, formError, submit} from './ui.js';
 import {serviceVisual, servicePhoto, serviceCategory, heroPhotography, personAvatar} from './visuals.js';
 import {createLanguagePicker} from './language-picker.js';
+import {createAutomaticSession} from './automatic-session.js';
 
 const $ = id => document.getElementById(id);
 const api = new Api();
@@ -20,11 +21,17 @@ try {
 } catch { /* Keep the bundled PNG when an optional URL is unavailable. */ }
 const terminal = ['closed','cancelled','rejected'];
 const blankCatalog = () => ({regions:[],groups:[],services:[],materials:[],plumbers:[],stores:[],center:null});
-const state = {user:null,catalog:blankCatalog(),demo:false,demoModule:null,orders:[],next:null,order:null,rates:new Map(),requestDraft:{},requestStep:1,routeVersion:0,controller:null,catalogError:null};
+const state = {user:null,catalog:blankCatalog(),demo:false,demoModule:null,orders:[],next:null,order:null,rates:new Map(),requestDraft:{},requestStep:1,routeVersion:0,controller:null,catalogErrors:{}};
 let toastTimer;
 let updateNavigationLayout=()=>{};
 const role = () => state.user?.role || 'customer';
 const hasSession = () => state.demo || api.authenticated;
+const automaticSession = createAutomaticSession({
+ hasSession,
+ canAuthenticate: () => Boolean(tg?.initData || localEnabled),
+ authenticate: () => fetchSession(!tg?.initData && localEnabled),
+ onAuthenticated: applySession,
+});
 const groupName = id => localized(state.catalog.groups.find(row => row.id === Number(id)));
 const groupIcon = index => serviceVisual(state.catalog.groups[index]).icon;
 const orderPath = id => `site/orders/${Number(id)}/`;
@@ -34,13 +41,21 @@ const check = (name,label,checked=false,hint='') => `<label class="checkbox"><in
 const fileInput = () => `<label class="form-field file-field">${e(t('media'))}<input type="file" name="file" accept="image/jpeg,image/png,image/webp,video/mp4"><small>${e(t('mediaHint'))}</small></label>`;
 const form = (name,content,label='save',attributes='') => `<form class="stack" data-form="${e(name)}" ${attributes}>${content}${formError()}${submit(label)}</form>`;
 function toast(message) { clearTimeout(toastTimer);$('toast').textContent=message;$('toast').hidden=false;toastTimer=setTimeout(()=>$('toast').hidden=true,6500); }
-function errorMessage(error) { return ['network','invalidResponse','catalogLimit','sessionChanged'].includes(error.message)?t(error.message):error.message || t('error'); }
+function errorMessage(error) { if(error.status===401)return t('personalUnavailable');return error.message==='invalidResponse'?t('serviceUnavailable'):['network','serviceUnavailable','catalogLimit','sessionChanged'].includes(error.message)?t(error.message):error.message || t('error'); }
 function showFormError(formElement,error) { const box=formElement.querySelector('.form-error');box.textContent=errorMessage(error);box.hidden=false;box.tabIndex=-1;box.focus(); }
 function navigate(path) { if (route()===path) render(); else location.hash=path; }
 function modal(title,content) { languagePicker.close();$('dialog-title').textContent=t(title);$('dialog-content').innerHTML=content;$('action-dialog').showModal(); }
 function closeModal() { $('action-dialog').close(); }
-function sessionNotice() { return !hasSession()?`<div class="notice stack tight"><strong>${e(t('login'))}</strong><p>${e(t('telegramHint'))}</p>${tg?.initData?button('loginAgain','telegram-login'):''}</div>`:''; }
-function requireSession() { if (!hasSession()) { modal('login',`<div class="stack"><p>${e(t('telegramHint'))}</p>${tg?.initData?button('loginAgain','telegram-login'):''}${localEnabled?`<p class="notice">${e(t('devHint'))}</p>${button('devLogin','dev-login')}${button('demoOpen','demo-open','secondary')}`:''}</div>`);return false;} return true; }
+function customerUnavailable(title='orders') {
+ return `<div class="stack">${heading(t(title))}<div class="card stack"><p class="muted">${e(t('personalUnavailable'))}</p><div class="actions">${button('refresh','refresh','secondary compact')}${link('help','help','outline compact')}</div></div></div>`;
+}
+function ensureSession(options) {
+ if(!hasSession())state.user=null;
+ return automaticSession.ensure(options);
+}
+function catalogNotice() {
+ return ['regions','groups','services'].some(key=>state.catalogErrors[key])?`<div class="catalog-status" role="status">${icon('clock')}<p>${e(t('catalogUnavailable'))}</p>${button('refresh','reload-catalog','secondary compact')}</div>`:'';
+}
 function updateChrome() {
  languagePicker.update(getLanguage(),{language:t('language'),chooseLanguage:t('chooseLanguage')});$('bell-icon').innerHTML=icon('bell');$('notifications-button').setAttribute('aria-label',t('notifications'));$('close-dialog').setAttribute('aria-label',t('close'));$('bottom-nav').setAttribute('aria-label',t('navigation'));$('offline-banner').textContent=t('offline');
  if (localEnabled) { $('preview-label').textContent=t(state.demo?'demo':'dev');$('dev-login').textContent=t('devLogin');$('design-preview').textContent=t('demoOpen');$('demo-role-label').hidden=!state.demo;for(const option of $('demo-role').options)option.textContent=t(option.value); }
@@ -97,21 +112,21 @@ function telegramTheme() {
  document.documentElement.dataset.theme=dark?'dark':'light';
 }
 async function loadCatalog() {
- state.catalog=blankCatalog();state.catalogError=null;
  const names=['regions','service-groups','services','materials','plumbers','stores','service-center'];
- const results=await Promise.allSettled(names.map(name=>name==='service-center'?api.request(`common/${name}/`):api.all(`common/${name}/`)));
+ const results=await Promise.allSettled(names.map(name=>name==='service-center'?api.request(`common/${name}/`,{anonymous:true}):api.all(`common/${name}/`,{anonymous:true})));
  if(state.demo)return;
  const keys=['regions','groups','services','materials','plumbers','stores','center'];
- results.forEach((result,index)=>{if(result.status==='fulfilled')state.catalog[keys[index]]=result.value;else state.catalogError=result.reason;});
+ state.catalogErrors={};
+ results.forEach((result,index)=>{if(result.status==='fulfilled')state.catalog[keys[index]]=result.value;else state.catalogErrors[keys[index]]=result.reason;});
 }
 async function rates(regionId,signal) {
  if(state.demo)return state.demoModule.demoRates;
  if(!regionId)return [];
- if(!state.rates.has(regionId))state.rates.set(regionId,await api.all(`common/service-rates/?region=${Number(regionId)}`,{signal}));
+ if(!state.rates.has(regionId))state.rates.set(regionId,await api.all(`common/service-rates/?region=${Number(regionId)}`,{signal,anonymous:true}));
  return state.rates.get(regionId);
 }
 async function loadOrders(signal,filter='all') {
- if(!hasSession())return [];
+ if(!hasSession()){state.orders=[];state.next=null;return [];}
  if(state.demo){state.orders=state.demoModule.demoOrders(role());state.next=null;return state.orders;}
  const bucket=['all','active','history'].includes(filter)?filter:'all';
  const data=await api.request(`site/orders/?bucket=${bucket}`,{signal});state.orders=Array.isArray(data)?data:data.results;state.next=data.next || null;return state.orders;
@@ -134,16 +149,20 @@ function customerHero() {
  </section>`;
 }
 async function home(signal) {
- await loadOrders(signal);
+ try {await loadOrders(signal);}catch(error){
+  if(signal.aborted)throw error;
+  if(role()!=='customer' && error.status!==401)throw error;
+  state.orders=[];state.next=null;
+  if(error.status===401){api.clear();state.user=null;automaticSession.reset();}
+ }
  if(role()!=='customer'&&hasSession())return partnerHome();
  const active=state.orders.filter(o=>!terminal.includes(o.status));
  return `<div class="stack">
-  ${sessionNotice()}${state.catalogError?`<div class="notice warning">${e(errorMessage(state.catalogError))} ${button('retry','reload-catalog','secondary')}</div>`:''}
-  <div class="row between home-summary"><div class="row">${tile('pin')}<div><strong>${e(state.catalog.regions[0]?.name || 'Marhamat')}</strong><p class="small muted">${e(t('support'))}</p></div></div><a href="#profile" class="text-button">${e(state.user?.first_name || t('welcome'))}</a></div>
+  <div class="row between home-summary"><div class="row">${tile('pin')}<div><strong>${e(state.catalog.regions[0]?.name || 'Marhamat')}</strong><p class="small muted">${e(t('support'))}</p></div></div>${state.user?`<a href="#profile" class="text-button">${e(state.user.first_name || t('profile'))}</a>`:''}</div>
   <form data-form="search" class="search-field">${icon('search')}<input name="query" aria-label="${e(t('search'))}" placeholder="${e(t('search'))}"><button class="icon-button" type="submit" aria-label="${e(t('search'))}">${icon('chevron')}</button></form>
   ${customerHero()}
   <div class="card trust-strip">${[['shield','plumbers'],['check','freeInspection'],['file','clearQuote'],['wallet','platformZero']].map(([ico,label])=>`<div>${icon(ico)}<p>${e(t(label))}</p></div>`).join('')}</div>
-  ${state.catalog.groups.length?section('groups',categories(),'services'):empty('services','noCatalog',link('help','help','secondary'))}
+  ${catalogNotice()}${state.catalog.groups.length?section('groups',categories(),'services'):empty('services','noCatalog',link('help','help','secondary compact'))}
   ${active.length?section('active',active.slice(0,2).map(orderCard).join(''),'orders'):''}
   <div class="split">${section('plumbers',partnerCards('plumber',state.catalog.plumbers.slice(0,3)),'partners/plumber')}${section('help',helpCard())}</div>
  </div>`;
@@ -154,9 +173,13 @@ function partnerHome() {
  const shortcuts=role()==='plumber'?[['requests','orders','list'],['schedule','schedule','calendar'],['materials','orders','box'],['payments','orders','wallet']]:[['orders','orders','list'],['materials','orders','box'],['deliveries','deliveries','truck'],['help','help','help']];
  return `<div class="stack"><div class="row">${tile(role()==='plumber'?'tool':'store','large')}<div><p class="muted">${e(t('greeting'))},</p><h1>${e(state.user.first_name)}</h1></div></div><section class="hero stack"><span class="eyebrow">${e(t(role()))}</span><h2>${e(t(pending.length?'openRequests':'inProgress'))}</h2><p>${e(t('workWait'))}</p>${link(pending.length?'requests':'orders','orders','white')}</section><div class="card quick-grid">${shortcuts.map(([label,href,ico])=>`<a href="#${href}">${tile(ico)}${e(t(label))}</a>`).join('')}</div>${section('openRequests',pending.length?pending.map(orderCard).join(''):empty('empty'), 'orders')}${active.length?section('active',active.filter(o=>!pending.includes(o)).slice(0,4).map(orderCard).join(''),'orders'):''}${state.next?link('more','orders','secondary'):''}${helpCard()}</div>`;
 }
-function partnerCards(type,rows) { return rows.length?`<div class="partner-list">${rows.map(person=>`<article class="card stack partner-card"><div class="row">${personAvatar(person)}<div class="grow"><h3>${e(person.name)}</h3><p class="small muted">${e(type==='plumber'?`${person.experience_years} ${t('experience')}`:person.address)}</p></div></div><p class="partner-rating">${icon('star')} ${e(person.rating || t('notRated'))}</p></article>`).join('')}</div>`:empty('empty'); }
+function partnerCards(type,rows) {
+ if(!rows.length && state.catalogErrors[type==='plumber'?'plumbers':'stores'])return `<p class="small muted" role="status">${e(t('sectionUnavailable'))}</p>`;
+ return rows.length?`<div class="partner-list">${rows.map(person=>`<article class="card stack partner-card"><div class="row">${personAvatar(person)}<div class="grow"><h3>${e(person.name)}</h3><p class="small muted">${e(type==='plumber'?`${person.experience_years} ${t('experience')}`:person.address)}</p></div></div><p class="partner-rating">${icon('star')} ${e(person.rating || t('notRated'))}</p></article>`).join('')}</div>`:empty('empty');
+}
 function helpCard() {
  const center=state.catalog.center;
+ if(!center && state.catalogErrors.center)return `<p class="notice" role="status">${e(t('sectionUnavailable'))}</p>`;
  return center?`<article class="card stack"><div class="row">${tile('help','green')}<div><h3>${e(center.name)}</h3><p class="muted small">${e(center.address)}</p></div></div><p class="small muted">${e(dayNames(center.working_days))} · ${e(center.opening_time?.slice(0,5))}–${e(center.closing_time?.slice(0,5))}</p>${center.phone?`<a class="button secondary" href="tel:${e(center.phone.replace(/[^+\d]/g,''))}">${icon('phone')}${e(center.phone)}</a>`:`<p class="notice">${e(t('centerMissing'))}</p>`}</article>`:`<div class="notice">${e(t('centerMissing'))}</div>`;
 }
 function welcome() {
@@ -165,7 +188,8 @@ function welcome() {
 function onboarding(step) { step=Math.min(Math.max(Number(step)||1,1),3);return `<div class="onboarding stack"><div class="onboarding-art">${icon(['tool','file','shield'][step-1])}</div><span class="eyebrow">Santex · ${step}/3</span>${heading(t(`onboardingTitle${step}`),t(`onboardingText${step}`))}<div class="dots" aria-hidden="true">${[1,2,3].map(n=>`<span class="${n===step?'active':''}"></span>`).join('')}</div>${step===3?button('complete','onboarding-done'):link('next',`onboarding/${step+1}`)}${link('skip','home','secondary')}</div>`; }
 async function services(group,query,signal) {
  const regionId=state.requestDraft.region_id || state.catalog.regions[0]?.id;
- const priceRows=await rates(regionId,signal);
+ let priceRows=[],priceUnavailable=false;
+ try {priceRows=await rates(regionId,signal);}catch(error){if(signal.aborted)throw error;priceUnavailable=true;}
  const rows=state.catalog.services.filter(service=>(!group||service.group===Number(group))&&(!query||localized(service).toLocaleLowerCase().includes(query.toLocaleLowerCase())));
  const cards=rows.map(service=>{
   const rate=priceRows.find(r=>r.service.id===service.id);
@@ -179,11 +203,11 @@ async function services(group,query,signal) {
   ${select('catalog-region','region',state.catalog.regions.map(r=>opt(r.id,r.name)),regionId,'id="catalog-region"')}
   <form data-form="search" class="search-field">${icon('search')}<input aria-label="${e(t('search'))}" name="query" value="${e(query || '')}" placeholder="${e(t('search'))}"><button type="submit" class="icon-button" aria-label="${e(t('search'))}">${icon('chevron')}</button></form>
   <div class="chips"><a class="chip ${!group?'active':''}" href="#services">${e(t('all'))}</a>${state.catalog.groups.map(g=>`<a href="#services/${g.id}" class="chip ${Number(group)===g.id?'active':''}">${e(localized(g))}</a>`).join('')}</div>
-  <p class="notice">${e(t('finalQuoteHint'))}</p>${rows.length?`<div class="grid">${cards}</div>`:empty('noResults','noCatalog',link('help','help','secondary'))}
+  ${catalogNotice()}${priceUnavailable?`<p class="small muted" role="status">${e(t('pricesUnavailable'))}</p>`:''}<p class="notice">${e(t('finalQuoteHint'))}</p>${rows.length?`<div class="grid">${cards}</div>`:empty('noResults','noCatalog',link('help','help','secondary'))}
  </div>`;
 }
 async function ordersScreen(filter,signal) {
- if(!requireSession())return `<div class="stack">${heading(t('orders'))}${sessionNotice()}</div>`;
+ if(!await ensureSession())return customerUnavailable('orders');
  await loadOrders(signal,filter);
  const rows=filter==='history'?state.orders.filter(o=>terminal.includes(o.status)):filter==='active'?state.orders.filter(o=>!terminal.includes(o.status)):state.orders;
  return `<div class="stack">${heading(t(role()==='plumber'?'requests':'orders'))}<div class="row between wrap"><div class="chips">${['all','active','history'].map(key=>`<a href="#orders/${key}" class="chip ${(!filter&&key==='all')||filter===key?'active':''}">${e(t(key))}</a>`).join('')}</div>${button('refresh','refresh','secondary')}</div><div id="order-list" class="grid">${rows.length?rows.map(orderCard).join(''):empty('noOrders',role()==='customer'?'noOrdersHint':'',role()==='customer'?link('send','request'):'')}</div>${state.next?button('more','load-more','secondary',`data-filter="${e(filter || 'all')}"`):''}</div>`;
@@ -196,7 +220,7 @@ function requestScreen(parts) {
   if(parts[0]==='group')state.requestDraft.service_group_id=Number(parts[1]);
  }
  const d=state.requestDraft;
- return `<div class="form-layout stack">${back()}${heading(t('send'),t('freeInspection'))}<div class="stepper"><span class="${state.requestStep===1?'active':''}">1</span>${e(t('details'))}<span class="${state.requestStep===2?'active':''}">2</span>${e(t('review'))}</div>${sessionNotice()}${state.user&&!state.user.phone_verified_at?`<div class="notice warning stack"><p>${e(t('contactHint'))}</p><div class="actions">${button('contact','contact')}${button('refresh','refresh-profile','secondary')}</div></div>`:''}${state.requestStep===1?form('request-details',`<div class="card stack">${select('region_id','region',[opt('',t('select')),...state.catalog.regions.map(r=>opt(r.id,r.name))],d.region_id || state.catalog.regions[0]?.id,'required')}${select('service_group_id','groups',[opt('',t('select')),...state.catalog.groups.map(g=>opt(g.id,localized(g)))],d.service_group_id,'required')}${textarea('address','address',d.address || '','required maxlength="500" autocomplete="street-address"')}${button('location','location','secondary')}<p class="small muted">${e(t('locationHint'))}</p><div class="form-grid">${field('latitude','latitude','number',d.latitude || '','required min="-90" max="90" step="0.000001" inputmode="decimal"')}${field('longitude','longitude','number',d.longitude || '','required min="-180" max="180" step="0.000001" inputmode="decimal"')}</div>${textarea('description','description',d.description || '','maxlength="5000"')}${check('is_urgent','urgent',d.is_urgent,'urgentHint')}</div>`,'next'):form('request-send',`<div class="card stack">${kv('region',state.catalog.regions.find(r=>r.id===Number(d.region_id))?.name)}${kv('groups',groupName(d.service_group_id))}${kv('address',d.address)}${d.description?kv('description',d.description):''}${d.is_urgent?`<p class="notice warning">${e(t('urgentHint'))}</p>`:''}${fileInput()}${check('consent','consent')}<p class="small muted">${e(t('finalQuoteHint'))}</p>${button('back','request-back','secondary')}</div>`,'send')}</div>`;
+ return `<div class="form-layout stack">${back()}${heading(t('send'),t('freeInspection'))}<div class="stepper"><span class="${state.requestStep===1?'active':''}">1</span>${e(t('details'))}<span class="${state.requestStep===2?'active':''}">2</span>${e(t('review'))}</div>${catalogNotice()}${state.user&&!state.user.phone_verified_at?`<div class="notice warning stack"><p>${e(t('contactHint'))}</p><div class="actions">${button('contact','contact')}${button('refresh','refresh-profile','secondary')}</div></div>`:''}${state.requestStep===1?form('request-details',`<div class="card stack">${select('region_id','region',[opt('',t('select')),...state.catalog.regions.map(r=>opt(r.id,r.name))],d.region_id || state.catalog.regions[0]?.id,'required')}${select('service_group_id','groups',[opt('',t('select')),...state.catalog.groups.map(g=>opt(g.id,localized(g)))],d.service_group_id,'required')}${textarea('address','address',d.address || '','required maxlength="500" autocomplete="street-address"')}${button('location','location','secondary')}<p class="small muted">${e(t('locationHint'))}</p><div class="form-grid">${field('latitude','latitude','number',d.latitude || '','required min="-90" max="90" step="0.000001" inputmode="decimal"')}${field('longitude','longitude','number',d.longitude || '','required min="-180" max="180" step="0.000001" inputmode="decimal"')}</div>${textarea('description','description',d.description || '','maxlength="5000"')}${check('is_urgent','urgent',d.is_urgent,'urgentHint')}</div>`,'next'):form('request-send',`<div class="card stack">${kv('region',state.catalog.regions.find(r=>r.id===Number(d.region_id))?.name)}${kv('groups',groupName(d.service_group_id))}${kv('address',d.address)}${d.description?kv('description',d.description):''}${d.is_urgent?`<p class="notice warning">${e(t('urgentHint'))}</p>`:''}${fileInput()}${check('consent','consent')}<p class="small muted">${e(t('finalQuoteHint'))}</p>${button('back','request-back','secondary')}</div>`,'send')}</div>`;
 }
 function quoteCard(order) {
  const quote=order.quotes.find(q=>q.version===order.quote_version);
@@ -265,19 +289,19 @@ async function detail(id,signal) {
  return `<div class="stack">${back('orders')}<div class="row between wrap">${heading(`№${order.id}`,groupName(order.service_group))}${button('refresh','refresh','secondary')}</div><div class="row wrap">${badge(order.status)}${order.is_urgent?`<span class="badge orange">${e(t('urgent'))}</span>`:''}</div>${actionPanel(order)}<div class="split"><div class="stack"><section class="card stack"><h2>${e(t('details'))}</h2><div class="row">${tile('pin')}<p>${e(order.address)}</p></div>${order.description?`<p class="muted">${e(order.description)}</p>`:''}${order.inspection_at?kv('inspection',date(order.inspection_at)):''}${order.work_starts_at?kv('start',date(order.work_starts_at)):''}${order.work_ends_at?kv('end',date(order.work_ends_at)):''}${order.status==='assigned'&&role()==='plumber'?kv('responseDue',date(order.response_due_at)):''}</section>${quoteCard(order)}${role()==='store'&&order.material_items.length?`<section class="card stack"><h2>${e(t('materials'))}</h2>${order.material_items.map(item=>`<div class="key-value"><span>${e(item.name)}<small class="muted"> · ${e(item.brand)}</small></span><span>${e(item.quantity)} ${e(item.unit)}</span></div>`).join('')}</section>`:''}${contractCard(order)}${deliveriesCard(order)}${paymentCards(order)}${order.issues.map(issue=>`<article class="card stack"><h2>${e(t('issue'))}</h2><p>${e(issue.description)}</p><p class="notice ${issue.resolved_at?'success':'warning'}">${e(issue.resolution || statusText('disputed'))}</p></article>`).join('')}${order.attachments.length?section('attachment',`<div class="card stack">${order.attachments.map(item=>button('attachment','attachment-download','secondary',`data-id="${item.id}"`)).join('')}</div>`):''}</div><aside class="stack">${participantCards(order)}<section class="card stack"><h2>${e(t('status'))}</h2>${progress(order)}</section><p class="notice">${e(t('privacy'))}</p>${helpCard()}</aside></div></div>`;
 }
 async function scheduleScreen(signal) {
- if(!requireSession())return sessionNotice();
+ if(!await ensureSession())return customerUnavailable('schedule');
  const rows=state.demo?state.demoModule.demoOrders(role()):await api.all('site/orders/?bucket=active',{signal});
  const items=rows.flatMap(o=>terminal.includes(o.status)||['completed','customer_accepted'].includes(o.status)?[]:[o.inspection_at?{order:o,date:o.inspection_at,label:'inspection'}:null,o.work_starts_at?{order:o,date:o.work_starts_at,label:'work'}:null].filter(Boolean)).sort((a,b)=>new Date(a.date)-new Date(b.date));
  return `<div class="stack">${heading(t('schedule'),t('scheduleHint'))}${items.length?`<div class="grid">${items.map(item=>`<a href="#order/${item.order.id}" class="card interactive card-link"><div class="row">${tile(item.label==='inspection'?'calendar':'tool')}<div class="grow"><strong>${e(date(item.date))}</strong><p class="small muted">${e(t(item.label))} · №${item.order.id}</p><p class="small muted">${e(item.order.address)}</p></div>${icon('chevron')}</div></a>`).join('')}</div>`:empty('noSchedule','scheduleEmpty',link('orders','orders'))}</div>`;
 }
 async function deliveryScreen(signal) {
- if(!requireSession())return sessionNotice();
+ if(!await ensureSession())return customerUnavailable('deliveries');
  const active=state.demo?state.demoModule.demoOrders(role()):await api.all('site/orders/?bucket=active',{signal});
  const rows=active.filter(order=>['preparing','delivering','delivered','working'].includes(order.status));
  return `<div class="stack">${heading(t('deliveries'),t('etaHint'))}<div class="grid">${rows.length?rows.map(orderCard).join(''):empty('empty','',link('orders','orders','secondary'))}</div></div>`;
 }
 async function profileScreen() {
- if(!hasSession())return `<div class="stack">${heading(t('profile'))}${sessionNotice()}${link('chooseLanguage','welcome','secondary')}</div>`;
+ if(!await ensureSession())return `<div class="form-layout stack">${heading(t('profile'))}${form('guest-preferences',`<div class="card stack">${select('language','language',[opt('uz','O‘zbekcha'),opt('ru','Русский'),opt('en','English')],getLanguage())}<p class="small muted">${e(t('guestPreferences'))}</p></div>`)}${link('help','help','secondary compact')}</div>`;
  const user=state.user;
  const name=[user.first_name,user.last_name].filter(Boolean).join(' ').trim() || t('account');
  return `<div class="stack profile-screen">
@@ -310,7 +334,7 @@ async function profileScreen() {
  </div>`;
 }
 async function notificationsScreen(signal) {
- if(!requireSession())return sessionNotice();
+ if(!await ensureSession())return customerUnavailable('notifications');
  const data=state.demo?{results:[]}:await api.request('auth/notifications/',{signal});
  const rows=Array.isArray(data)?data:data.results;
  $('notification-dot').hidden=!rows.some(n=>!n.read_at);
@@ -366,7 +390,7 @@ async function submitForm(formElement) {
  if(name==='search'){navigate(`services/search/${encodeURIComponent(value('query'))}`);return;}
  if(name==='request-details') {state.requestDraft={region_id:Number(value('region_id')),service_group_id:Number(value('service_group_id')),address:value('address'),latitude:value('latitude'),longitude:value('longitude'),description:value('description'),is_urgent:data.has('is_urgent')};state.requestStep=2;render();return;}
  if(name==='request-send') {
-  if(!requireSession())return;
+  if(!await ensureSession())throw new Error(t('requestUnavailable'));
   if(!data.has('consent'))throw new Error(t('consent'));
   if(state.demo){toast(t('demoOnly'));return;}
   const file=validateFile(data.get('file'));
@@ -377,6 +401,7 @@ async function submitForm(formElement) {
   return;
  }
  if(state.demo){toast(t('demoOnly'));return;}
+ if(name==='guest-preferences'){setLanguage(value('language'));storePreference('santex-language',getLanguage());toast(t('success'));render();return;}
  if(name==='profile') {state.user=await api.request('auth/me/',{method:'PATCH',data:{first_name:value('first_name'),last_name:value('last_name'),language:value('language')}});setLanguage(state.user.language);storePreference('santex-language',getLanguage());toast(t('success'));render();return;}
  if(name==='order-action') {
   const endpoint=formElement.dataset.endpoint;const payload={};
@@ -420,27 +445,33 @@ function captureRequestDraft() {
  for(const key of ['region_id','service_group_id','address','latitude','longitude','description'])state.requestDraft[key]=values.get(key) || '';
  state.requestDraft.is_urgent=values.has('is_urgent');
 }
-async function login(local=false,landing='home') {
+async function fetchSession(local=false) {
  const payload=await api.request(local?'auth/dev-local/':'auth/telegram/',{method:'POST',data:local?{language:getLanguage()}:{init_data:tg.initData,language:getLanguage()},anonymous:true});
- api.setSession(payload);state.demo=false;state.user=payload.user;state.order=null;closeModal();updateChrome();navigate(landing);
+ if(typeof payload?.access!=='string' || !payload.access || typeof payload.refresh!=='string' || !payload.refresh || !payload.user || !['customer','plumber','store'].includes(payload.user.role))throw new ApiError('invalidResponse',200);
+ return payload;
+}
+function applySession(payload) {
+ api.setSession(payload);state.demo=false;state.user=payload.user;state.order=null;state.orders=[];state.next=null;updateChrome();
  api.request('auth/notifications/').then(data=>{$('notification-dot').hidden=!(data?.results || data || []).some(item=>!item.read_at);}).catch(()=>{});
+}
+async function login(local=false,landing='home') {
+ automaticSession.reset();applySession(await fetchSession(local));closeModal();navigate(landing);
 }
 async function openDemo() {
  if(!localEnabled)return;
- state.demoModule=await import('./demo.js');state.demo=true;api.clear();state.user=state.demoModule.demoUser($('demo-role').value);state.catalog=state.demoModule.demoCatalog;state.catalogError=null;state.rates.clear();state.order=null;state.requestDraft={};state.requestStep=1;closeModal();navigate('home');
+ automaticSession.reset();state.demoModule=await import('./demo.js');state.demo=true;api.clear();state.user=state.demoModule.demoUser($('demo-role').value);state.catalog=state.demoModule.demoCatalog;state.catalogErrors={};state.rates.clear();state.order=null;state.requestDraft={};state.requestStep=1;closeModal();navigate('home');
 }
 async function download(path,filename) {
  if(state.demo){toast(t('demoOnly'));return;}
  const blob=await api.request(path,{blob:true});const url=URL.createObjectURL(blob);const anchor=document.createElement('a');anchor.href=url;anchor.download=filename;anchor.click();setTimeout(()=>URL.revokeObjectURL(url),60000);
 }
 async function performAction(action,element) {
- if(action==='telegram-login'){if(!tg?.initData){toast(t('telegramHint'));return;}await login();return;}
- if(action==='dev-login'){if(localEnabled){if(state.demo){state.demo=false;state.user=null;await loadCatalog();}await login(true);}return;}
+ if(action==='dev-login'){if(localEnabled){if(state.demo){state.demo=false;state.user=null;state.catalog=blankCatalog();state.catalogErrors={};state.rates.clear();await loadCatalog();}await login(true);}return;}
  if(action==='demo-open'){await openDemo();return;}
  if(action==='choose-language'){await changeLanguage(element.dataset.language);return;}
  if(action==='onboarding-done'){storePreference('santex-onboarding','done');navigate(state.user&&!state.user.phone_verified_at?'profile':'home');return;}
- if(action==='refresh'){await render();return;}
- if(action==='reload-catalog'){state.catalogError=null;await loadCatalog();await render();return;}
+ if(action==='refresh'){await ensureSession({retry:true});await render();return;}
+ if(action==='reload-catalog'){state.rates.clear();await loadCatalog();await render();return;}
  if(action==='request-back'){state.requestStep=1;render();return;}
  if(action==='contact') {
   if(!tg?.requestContact){toast(t('telegramHint'));return;}
@@ -462,7 +493,7 @@ async function performAction(action,element) {
   const holder=document.createElement('div');holder.className='stack';holder.innerHTML=data.results.map(item=>`<article class="card stack notification ${!item.read_at?'unread':''}"><p>${e(item.text)}</p><small class="muted">${e(date(item.created_at))}</small><div class="actions">${item.order_id?link('view',`order/${item.order_id}`,'secondary'):''}${!item.read_at?button('read','read-notification','outline',`data-id="${item.id}"`):''}</div></article>`).join('');element.before(holder);if(data.next)element.dataset.next=new URL(data.next,location.origin).pathname+new URL(data.next,location.origin).search;else element.hidden=true;return;
  }
  if(action==='read-notification'){if(state.demo){toast(t('demoOnly'));return;}await api.request(`auth/notifications/${element.dataset.id}/read/`,{method:'POST',data:{}});element.closest('.notification').classList.remove('unread');element.remove();return;}
- if(action==='logout'){try{if(!state.demo)await api.logout();}finally{state.user=null;state.demo=false;state.orders=[];state.order=null;state.requestDraft={};state.requestStep=1;state.rates.clear();await loadCatalog();navigate('home');}return;}
+ if(action==='logout'){automaticSession.reset();try{if(!state.demo)await api.logout();}finally{state.user=null;state.demo=false;state.catalog=blankCatalog();state.catalogErrors={};state.orders=[];state.order=null;state.requestDraft={};state.requestStep=1;state.rates.clear();$('notification-dot').hidden=true;await loadCatalog();navigate('home');}return;}
  if(action==='add-service'){$('service-lines').insertAdjacentHTML('beforeend',serviceEditor());return;}
  if(action==='add-material'){$('material-lines').insertAdjacentHTML('beforeend',materialEditor());return;}
  if(action==='remove-line'){element.closest('fieldset').remove();return;}
@@ -493,7 +524,7 @@ async function render({focus=true} = {}) {
   else if(page==='onboarding')content=onboarding(parts[0]);
   else if(page==='services')content=await services(parts[0]==='search'?null:parts[0],parts[0]==='search'?decodeURIComponent(parts.slice(1).join('/')):'',signal);
   else if(page==='orders')content=await ordersScreen(parts[0],signal);
-  else if(page==='order')content=hasSession()?await detail(parts[0],signal):sessionNotice();
+  else if(page==='order')content=await ensureSession()?await detail(parts[0],signal):customerUnavailable('order');
   else if(page==='request')content=requestScreen(parts);
   else if(page==='profile')content=await profileScreen();
   else if(page==='schedule')content=await scheduleScreen(signal);
@@ -506,8 +537,8 @@ async function render({focus=true} = {}) {
   $('screen').innerHTML=content;$('screen').setAttribute('aria-busy','false');if(focus)$('screen').focus({preventScroll:true});
  } catch(error) {
   if(signal.aborted||version!==state.routeVersion)return;
-  const retryAction=error.status===401?(localEnabled?'dev-login':'telegram-login'):'refresh';
-  $('screen').innerHTML=`<div class="empty-state">${tile('alert','large orange')}<h1>${e(t('error'))}</h1><p role="alert">${e(errorMessage(error))}</p>${button(error.status===401?'loginAgain':'retry',retryAction)}${link('help','help','secondary')}</div>`;
+  if(error.status===401){api.clear();state.user=null;automaticSession.reset();updateChrome();}
+  $('screen').innerHTML=`<div class="empty-state">${tile('alert','large orange')}<h1>${e(t('error'))}</h1><p role="alert">${e(errorMessage(error))}</p><div class="actions">${button('refresh','refresh','secondary compact')}${link('help','help','outline compact')}</div></div>`;
   $('screen').setAttribute('aria-busy','false');
  }
 }
@@ -552,9 +583,7 @@ async function boot() {
  tg?.ready();tg?.expand();telegramInsets();telegramTheme();
  tg?.onEvent('safeAreaChanged',telegramInsets);tg?.onEvent('contentSafeAreaChanged',telegramInsets);tg?.onEvent('viewportChanged',telegramInsets);tg?.onEvent('themeChanged',telegramTheme);
  tg?.BackButton?.onClick(()=>{if($('language').getAttribute('aria-expanded')==='true')languagePicker.close(true);else if($('action-dialog').open)closeModal();else navigate(route().startsWith('order/')?'orders':'home');});
- await loadCatalog();
- if(hasSession())return;
- if(tg?.initData)try {await login(false,!location.hash&&!preference('santex-onboarding')?'welcome':route());return;}catch(error){toast(errorMessage(error));}
+ await Promise.all([loadCatalog(),ensureSession()]);
  if(!location.hash&&!preference('santex-onboarding')){location.hash='welcome';return;}
  render();
 }

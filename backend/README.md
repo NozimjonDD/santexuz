@@ -56,7 +56,9 @@ Development/test bazasida `python manage.py seed_mock` loyiha modellariga kamida
 
 ### Telegramsiz lokal ko‘rish
 
-`project_backend.settings.development` rejimida `DEV_LOCAL_LOGIN=true` (default) bo‘lsa, `http://127.0.0.1:8000/` yoki `http://localhost:8000/` da **Sinov akkaunti** tugmasi chiqadi. Alohida `__santex_local_preview__` mijoz akkaunti yaratiladi: u admin/hamkor huquqiga ega emas, Telegramga bog‘lanmagan va sinov telefoni bilan ishlaydi. Shu akkaunt orqali yuborilgan buyurtmalar bazada saqlanadi. Hudud/guruhlar uchun avval `seed_pilot` kerak; haqiqiy tarif va yuridik ma’lumotlar avtomatik kiritilmaydi.
+`project_backend.settings.development` rejimida `DEV_LOCAL_LOGIN=true` (default) bo‘lsa, `http://127.0.0.1:8000/` yoki `http://localhost:8000/` da mijozning sinov sessiyasi avtomatik ochiladi. **Sinov akkaunti** tugmasi uni qayta tanlash uchun qoladi. Alohida `__santex_local_preview__` mijoz akkaunti yaratiladi: u admin/hamkor huquqiga ega emas, Telegramga bog‘lanmagan va sinov telefoni bilan ishlaydi. Shu akkaunt orqali yuborilgan buyurtmalar bazada saqlanadi. Hudud/guruhlar uchun avval `seed_pilot` kerak; haqiqiy tarif va yuridik ma’lumotlar avtomatik kiritilmaydi.
+
+Mijoz UI’da qo‘lda login yoki “Qayta kirish” paneli yo‘q. Telegramda server tasdiqlagan `initData` orqali sessiya avtomatik yaratiladi; katalog JWTdan mustaqil. Oddiy brauzerda katalog va xizmatlar ochiq, shaxsiy buyurtmalar va yozish amallari uchun sessiya/telefon/rozilik qoidalari saqlanadi. API javobidagi nosozliklarni serverda `python scripts/check_public_api.py --base-url https://YOUR_DOMAIN` bilan tekshirish mumkin. [Oqim va yangi testlar](docs/miniapp_ui.md).
 
 **Dizaynni ko‘rish** tugmasi berilgan HTML dizayni asosidagi uch rol ekranini namunaviy ma’lumot bilan ochadi. Tepada Mijoz/Usta/Do‘kon tanlanadi; bu rejim bazaga hech narsa yozmaydi. Haqiqiy ro‘l va ruxsatlar Telegram akkaunti hamda backenddan olinadi. Ekranlar va TZ mosligi: [Mini App UI](docs/miniapp_ui.md).
 

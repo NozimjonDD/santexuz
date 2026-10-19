@@ -5,6 +5,7 @@ export class ApiError extends Error {
 function errorText(value) {
   if (typeof value === "string") return value;
   if (Array.isArray(value)) return value.map(errorText).join(" · ");
+  if (value && typeof value === "object" && "detail" in value) return errorText(value.detail);
   return Object.entries(value || {}).map(([key, item]) => key === "detail" ? errorText(item) : `${key}: ${errorText(item)}`).join("\n");
 }
 export class Api {
@@ -47,6 +48,9 @@ export class Api {
       return this.request(path, {method, data, signal, blob, anonymous, retry: false});
     }
     if (response.ok && blob) return bodyBlob;
+    // Proxies and failed backends may return HTML instead of JSON. Preserve
+    // the service failure status without showing a parser error to customers.
+    if (response.status >= 500) throw new ApiError("serviceUnavailable", response.status);
     let body = null;
     if (raw) {
       try { body = JSON.parse(raw); }
@@ -72,14 +76,15 @@ export class Api {
     }
     return this.#refreshing.promise;
   }
-  async all(path, {signal} = {}) {
+  async all(path, {signal, anonymous = false} = {}) {
     const results = [];
     let next = path;
     for (let page = 0; next && page < 100; page++) {
-      const data = await this.request(next, {signal});
+      const data = await this.request(next, {signal, anonymous});
       if (Array.isArray(data)) return results.concat(data);
-      results.push(...(data?.results || []));
-      next = data?.next ? new URL(data.next, location.origin).pathname + new URL(data.next, location.origin).search : null;
+      if (!data || !Array.isArray(data.results) || (data.next != null && typeof data.next !== "string")) throw new ApiError("invalidResponse", 200);
+      results.push(...data.results);
+      next = data.next ? new URL(data.next, location.origin).pathname + new URL(data.next, location.origin).search : null;
     }
     if (next) throw new ApiError("catalogLimit");
     return results;

@@ -30,6 +30,8 @@ def positive_query_id(request, name, required=False):
 
 
 class PublicCatalogViewSet(viewsets.ReadOnlyModelViewSet):
+    # Public projections never depend on the caller's (possibly expired) JWT.
+    authentication_classes = ()
     permission_classes = (permissions.AllowAny,)
     http_method_names = ("get", "head", "options")
 
@@ -83,6 +85,7 @@ class MaterialViewSet(PublicCatalogViewSet):
 
 
 class ServiceCenterView(APIView):
+    authentication_classes = ()
     permission_classes = (permissions.AllowAny,)
     serializer_class = serializers.ServiceCenterSerializer
 

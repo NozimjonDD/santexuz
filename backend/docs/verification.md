@@ -106,6 +106,12 @@ Headerdagi til `select`i light/dark mavzuga mos menu-button bilan almashtirildi.
 
 Yuqori panelga tabiiy qator almashishi, pastki navigatsiyaga teng grid, mobil qisqa nomlar va tekis ikonka qatorlari qo‘shildi. Yozuvlar endi harfma-harf bo‘linmaydi. Til/shrift/kenglikka qarab haqiqiy yozuv kengligi o‘lchanadi; sig‘masa navigatsiya qo‘shimcha qatorga o‘tadi va kontent bo‘shlig‘i balandlikka moslashadi. Mavjud frontend parse testi o‘zgargan modullarni qamraydi; yangi UI testi yozilmadi. Testlar va vizual ko‘rik bu kompyuterda bajarilmadi. Boshqa kompyuterda `node --test scripts/miniapp_api.test.mjs`; qo‘lda kichik telefon, uch til/rol va 200% matn tekshiriladi. [Moslashuv qoidalari](miniapp_ui.md).
 
+## 2026-10-19 mijoz sessiyasi va API xatolari (hali bajarilmagan)
+
+Login/qayta kirish panellari o‘rniga Telegram yoki qat’iy localhost chegarasida avtomatik sessiya qo‘shildi. Katalog JWTdan mustaqil qilindi; token, avtomatik sessiya, xato JSONi, noto‘g‘ri list shakli va private API chegaralari uchun regressiya testlari yozildi. Handler nomini yopib yuborgan import olib tashlandi. Yangi testlar: `scripts/miniapp_session.test.mjs` (5), mavjud API fayliga 4 test, `apps/common/test_api_errors.py` (3), `apps/api/v1/tests/test_public_access.py` (2). Testlar, ilova va production tarmog‘i bu kompyuterda bajarilmadi. Tugmalar 44px minimumga ixchamlashtirildi; til menyusi 248px/44px.
+
+Serverning ko‘rinayotgan xatosi aynan qaysi HTTP/DB sababdan ekanligi hali runtime bilan tasdiqlanmadi. `python scripts/check_public_api.py --base-url https://YOUR_DOMAIN` boshqa kompyuterda public endpointlar va readiness holatini tekshiradi; nosoz yo‘llar uchun server logi/DB migratsiyalari/Nginx marshrutini tekshirish kerak. [Oqim va test buyrug‘i](miniapp_ui.md).
+
 ## 2026-10-19 mock seed qo‘shimchasi (hali bajarilmagan)
 
 `seed_mock` va `apps/common/test_mock_seed.py` qo‘shildi: barcha loyiha modellari, pul balansi, bir xil batchni takrorlamaslik, production cheklovi, mavjud akkaunt/markazni saqlash va xatoda DB/fayl rollback uchun 7 ta test. [Ishlatish va aniq sonlar](mock_seed.md). Bu yangi testlar yozish kompyuterida bajarilmadi; avvalgi 70 test natijasiga kirmaydi.

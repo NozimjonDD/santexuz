@@ -11,7 +11,7 @@ const originalDocument=globalThis.document;
 const originalLocation=globalThis.location;
 const json=(body,status=200)=>new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json'}});
 test('every frontend module parses without a bundler',async()=>{
- for(const name of ['api','app','demo','i18n','ui','visuals','language-picker']){
+ for(const name of ['api','app','demo','i18n','ui','visuals','language-picker','automatic-session']){
   const source=await readFile(new URL(`../static/miniapp/${name}.js`,import.meta.url),'utf8');
   const result=spawnSync(process.execPath,['--input-type=module','--check'],{input:source,encoding:'utf8'});
   assert.equal(result.status,0,`${name}.js: ${result.stderr}`);
@@ -83,6 +83,37 @@ test('a caller abort propagates instead of being presented as a server error',as
  const api=new Api();const controller=new AbortController();controller.abort();
  globalThis.fetch=async(url,options)=>{options.signal.throwIfAborted();};
  await assert.rejects(api.request('site/orders/',{signal:controller.signal}),error=>error.name==='AbortError');
+});
+
+test('public catalog pagination never sends an expired JWT or rotates its refresh token',async()=>{
+ const api=new Api();api.setSession({access:'expired',refresh:'private-refresh'});let calls=0;
+ globalThis.fetch=async(url,options)=>{
+  calls++;assert.equal(options.headers.Authorization,undefined);assert.ok(url.pathname.includes('/common/'));
+  return url.search?json({results:[{id:2}],next:null}):json({results:[{id:1}],next:'/api/v1/common/services/?offset=1'});
+ };
+ assert.deepEqual(await api.all('common/services/',{anonymous:true}),[{id:1},{id:2}]);
+ assert.equal(calls,2);assert.equal(api.authenticated,true);
+});
+
+test('HTML service failures keep the HTTP status and never expose a JSON parse error or page source',async()=>{
+ const api=new Api();
+ for(const status of [500,502,503,504]){
+  globalThis.fetch=async()=>new Response('<html>private upstream traceback</html>',{status,headers:{'Content-Type':'text/html'}});
+  await assert.rejects(api.request('common/services/'),error=>error.status===status&&error.message==='serviceUnavailable'&&error.fields===null);
+ }
+});
+
+test('wrong list shapes are rejected instead of becoming a successful empty catalog',async()=>{
+ const api=new Api();
+ for(const body of [null,{detail:'wrong endpoint'},{results:{}},{results:[],next:{url:'bad'}}]){
+  globalThis.fetch=async()=>json(body);
+  await assert.rejects(api.all('common/services/'),error=>error.message==='invalidResponse');
+ }
+});
+
+test('error envelopes preserve field messages without technical envelope fields',async()=>{
+ const api=new Api();globalThis.fetch=async()=>json({error:true,status_code:400,detail:{address:['Required']}},400);
+ await assert.rejects(api.request('site/orders/',{method:'POST',data:{}}),error=>error.message==='address: Required');
 });
 
 test('an old renewal cannot restore a cleared session or overwrite a new login',async()=>{
