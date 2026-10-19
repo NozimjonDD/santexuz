@@ -1,2 +1,0 @@
-*.sh text eol=lf
-deploy/ubuntu/** text eol=lf
