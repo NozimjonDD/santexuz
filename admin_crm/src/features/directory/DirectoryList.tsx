@@ -68,7 +68,7 @@ function directoryColumns({ kind, orderSummaries, ratings, onEdit, onToggle }: D
     },
     {
       key: 'commission', label: 'Komissiya', sortValue: row => row.commission ?? -1,
-      render: row => row.commission == null ? 'Standart / sozlanmagan' : `${row.commission}% (demo)`,
+      render: row => row.commission == null ? 'Standart / sozlanmagan' : `${row.commission}%`,
     },
   );
 
@@ -154,7 +154,7 @@ export function DirectoryList(props: DirectoryListProps) {
     <div className="directory-summary">
       <span><strong>{all.length}</strong> jami {config.singular}</span>
       {kind !== 'customers' && <span><i className="stat-dot success" /><strong>{activeCount}</strong> faol</span>}
-      <Badge tone="blue">Marhamat pilot · DEMO</Badge>
+      <Badge tone="blue">Marhamat pilot</Badge>
     </div>
     <Panel>
       <div className="filter-bar">

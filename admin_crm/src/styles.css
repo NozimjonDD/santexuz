@@ -524,6 +524,10 @@ fieldset .button { margin-top: 12px; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
 }
+.data-state { min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 32px; text-align: center; }
+.data-state p { max-width: 560px; }
+.data-state [role='status'] { display: flex; align-items: center; gap: 12px; }
+
 @media print {
   .sidebar, .topbar, .demo-banner, .app-footer, .button, .toast-stack, .tabs, .order-actions, .next-step { display: none !important; }
   .main-shell { margin: 0; width: 100%; }

@@ -42,7 +42,7 @@ export default function Dashboard() {
         <StatCard label="Hamkorlarga qoldiq" value={<Money value={metrics.due} />} detail="Nizodagi summa ham kiritilgan" icon={<Users size={20} />} onClick={() => navigate('/finance?tab=partners')} />
       </div>
       <div className="dashboard-chart-grid">
-        <Panel title="Buyurtmalar dinamikasi" caption="Tanlangan davr bo‘yicha yangi so‘rovlar · demo" action={<Badge tone="blue">{orders.length} ta buyurtma</Badge>}>
+        <Panel title="Buyurtmalar dinamikasi" caption="Tanlangan davr bo‘yicha yangi so‘rovlar" action={<Badge tone="blue">{orders.length} ta buyurtma</Badge>}>
           {trend.points.length ? <TrendChart points={trend.points} bucketDays={trend.bucketDays} /> : <EmptyState text="Tanlangan davrda buyurtma yo‘q." />}
         </Panel>
         <Panel title="Buyurtmalar holati" caption="Tanlangan davr kesimida">

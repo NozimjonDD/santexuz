@@ -1,5 +1,14 @@
 import { expect, test } from '@playwright/test';
 
+test('JSON yuklash xatosi ko‘rinadi va qayta urinish ma’lumotlarni tiklaydi', async ({ page }) => {
+  await page.route('**/mock/database.json', route => route.fulfill({ status: 503, contentType: 'application/json', body: '{}' }));
+  await page.goto('/dashboard');
+  await expect(page.getByRole('heading', { name: 'Ma’lumotni yuklab bo‘lmadi' })).toBeVisible();
+  await page.unroute('**/mock/database.json');
+  await page.getByRole('button', { name: 'Qayta urinish' }).click();
+  await expect(page.getByRole('heading', { name: 'Bosh sahifa', exact: true, level: 1 })).toBeVisible();
+});
+
 test('barcha asosiy sahifalar to‘g‘ridan-to‘g‘ri ochiladi', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));

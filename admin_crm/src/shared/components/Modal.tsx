@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { X } from 'lucide-react';
+import { useCanWrite } from '../writeAccess';
 
 export function Modal({ title, description, children, onClose, wide = false }: {
   title: string; description?: string; children: ReactNode; onClose: () => void; wide?: boolean;
@@ -40,6 +41,7 @@ export interface Confirmation {
 }
 
 export function ConfirmDialog({ value, onClose }: { value: Confirmation; onClose: () => void }) {
+  const canWrite = useCanWrite();
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
   const submitted = useRef(false);
@@ -57,11 +59,11 @@ export function ConfirmDialog({ value, onClose }: { value: Confirmation; onClose
 
   return (
     <Modal title={value.title} description={value.description} onClose={onClose}>
-      {value.details}<p className="muted small">Bu amal faqat joriy demo sessiyasiga ta’sir qiladi.</p>
+      {value.details}<p className="muted small">{canWrite ? 'Bu amal faqat joriy demo sessiyasiga ta’sir qiladi.' : 'API rejimida faqat ko‘rish mumkin. Saqlash amallari hali ulanmagan.'}</p>
       {error && <p role="alert" className="field-error">{error}</p>}
       <div className="form-actions">
         <button type="button" className="button secondary" onClick={onClose}>Ortga</button>
-        <button type="button" disabled={done} className={`button ${value.danger ? 'danger' : 'primary'}`} onClick={confirm}>{value.label ?? 'Tasdiqlash'}</button>
+        <button type="button" disabled={done || !canWrite} className={`button ${value.danger ? 'danger' : 'primary'}`} onClick={confirm}>{value.label ?? 'Tasdiqlash'}</button>
       </div>
     </Modal>
   );

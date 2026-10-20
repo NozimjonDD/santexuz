@@ -1,0 +1,6 @@
+/// <reference types="vite/client" />
+
+interface ImportMetaEnv {
+  readonly PUBLIC_API_MOCK?: string;
+  readonly PUBLIC_API_BASE_URL?: string;
+}

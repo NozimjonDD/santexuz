@@ -1,6 +1,6 @@
 # React CRM — amalga oshirilgan qamrov
 
-Bu fayl `reactjs.md` va `TZ_docs.md`ni almashtirmaydi. Hujjatlardagi admin CRM doirasi bajarilgan; Mini App va Django backend ushbu topshiriqqa kiritilmagan.
+Bu fayl `reactjs.md` va `TZ_docs.md`ni almashtirmaydi. Admin CRMning asosiy ekranlari va lokal demo oqimlari yaratilgan; Mini App va Django backend ushbu ilovaga kiritilmagan. TZ bilan moslik, demo farqlari va backend uchun taklif etilgan kontrakt [`instruction_api.md`](../instruction_api.md)da berilgan. Quyidagi jadval ishlayotgan production tizimi yoki bajarilgan runtime tekshiruvlari haqida tasdiq emas.
 
 | Talab | Yo‘l / amalga oshirilishi |
 | --- | --- |
@@ -48,4 +48,4 @@ Brauzerda 390px, 768px va 1440px kenglikda jadvallar, mobil menyu va modal klavi
 
 ## Statik bosqich chegaralari
 
-Real login, API, Telegram tasdig‘i/xabari, xarita/yo‘l ETA, rasm yuklash, PDF generator, XLSX eksport, haqiqiy to‘lov yoki fiskal chek yo‘q. UI bularni haqiqiy bajarilgandek ko‘rsatmaydi. Standart tariflar, markaz ma’lumotlari, huquqiy matn va shaxsiy ma’lumot saqlash siyosati biznes tomonidan tasdiqlanishi kerak. Production hosting sozlamalari demo frontendni berish uchun tayyorlangan; serverli CRMning ishga tushirilganini anglatmaydi.
+`PUBLIC_API_MOCK=True` statik JSON demoni yuklaydi; `False` `PUBLIC_API_BASE_URL`dagi compatibility GET endpointlarini o‘qiydi. Real rejim hozir faqat ko‘rish uchun; frontendda yozish bloklangan. Real login ekrani, biznes commandlari, Telegram tasdig‘i/xabari, xarita/yo‘l ETA, rasm yuklash, PDF generator, XLSX eksport, haqiqiy to‘lov yoki fiskal chek yo‘q. Standart tariflar, markaz ma’lumotlari, huquqiy matn va shaxsiy ma’lumot saqlash siyosati biznes tomonidan tasdiqlanishi kerak. Production hosting sozlamalari serverli CRM ishga tushirilganini anglatmaydi. Ulanish tafsilotlari `instruction_api.md` §17da.

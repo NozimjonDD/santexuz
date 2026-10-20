@@ -29,7 +29,7 @@ export function id(prefix: string) {
 }
 export const phoneValid = (phone: string) => /^\+998\d{9}$/.test(phone.replace(/[\s()-]/g, ''));
 export const now = () => new Date().toISOString();
-export function exportCsv(name: string, headers: string[], rows: unknown[][]) {
+export function exportCsv(name: string, headers: string[], rows: unknown[][], demo = true) {
   const escape = (value: unknown) => {
     let text = String(value ?? 'Sozlanmagan');
     // Prevent spreadsheet formula execution, including whitespace-prefixed cells.
@@ -40,7 +40,7 @@ export function exportCsv(name: string, headers: string[], rows: unknown[][]) {
   const url = URL.createObjectURL(new Blob([content], { type: 'text/csv;charset=utf-8;' }));
   const link = document.createElement('a');
   link.href = url;
-  link.download = `${name}-DEMO.csv`;
+  link.download = `${name}${demo ? '-DEMO' : ''}.csv`;
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

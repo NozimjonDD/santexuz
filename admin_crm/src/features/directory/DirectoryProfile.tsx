@@ -19,7 +19,7 @@ const paymentTypes: Partial<Record<EntityCollection, readonly PaymentKind[]>> = 
 
 function profileValue(row: DirectoryRow, field: DirectoryField) {
   const value = row[field.name];
-  if (field.type === 'checkbox') return value ? 'Ha (demo)' : 'Yo‘q';
+  if (field.type === 'checkbox') return value ? 'Ha' : 'Yo‘q';
   if (field.type === 'number' && value == null) return 'Sozlanmagan';
   return Array.isArray(value) ? value.join(', ') : fieldText(row, field.name) || 'Belgilanmagan';
 }
@@ -49,7 +49,7 @@ export function DirectoryProfile({ kind, row, orders, db, onEdit }: DirectoryPro
   return <>
     <Link className="back-link" to={pathFor(kind)}><ArrowLeft size={16} aria-hidden="true" />{config.title}</Link>
     <PageHeader
-      eyebrow={`${config.title.toLocaleUpperCase('uz')} / DEMO PROFIL`}
+      eyebrow={`${config.title.toLocaleUpperCase('uz')} / PROFIL`}
       title={row.name}
       description={row.description || row.notes || config.description}
       actions={<button className="button primary" onClick={() => onEdit(row)}><Pencil size={16} aria-hidden="true" />Tahrirlash</button>}

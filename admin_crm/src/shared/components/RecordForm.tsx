@@ -1,10 +1,12 @@
 import { useId, useRef, useState, type FormEvent } from 'react';
 import { Check } from 'lucide-react';
+import { useCanWrite } from '../writeAccess';
 import { validateFields, type FieldSpec, type FormValues } from '../formValidation';
 
 export function RecordForm({ fields, initial = {}, onSubmit, onCancel, submitLabel = 'Saqlash' }: {
   fields: FieldSpec[]; initial?: FormValues; onSubmit: (values: FormValues) => void; onCancel?: () => void; submitLabel?: string;
 }) {
+  const canWrite = useCanWrite();
   const [values, setValues] = useState<FormValues>(initial);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const formId = useId();
@@ -12,6 +14,7 @@ export function RecordForm({ fields, initial = {}, onSubmit, onCancel, submitLab
 
   function submit(event: FormEvent) {
     event.preventDefault();
+    if (!canWrite) { setErrors({ _form: 'API rejimida saqlash amallari hali ulanmagan.' }); return; }
     const next = validateFields(fields, values);
     setErrors(next);
     const firstError = Object.keys(next)[0];
@@ -62,7 +65,8 @@ export function RecordForm({ fields, initial = {}, onSubmit, onCancel, submitLab
         })}
       </div>
       {errors._form && <p role="alert" className="field-error">{errors._form}</p>}
-      <div className="form-actions">{onCancel && <button type="button" className="button secondary" onClick={onCancel}>Bekor qilish</button>}<button className="button primary" type="submit"><Check size={16} aria-hidden="true" />{submitLabel}</button></div>
+      {!canWrite && <p className="field-hint">API rejimi faqat ko‘rish uchun. Saqlash amallari hali ulanmagan.</p>}
+      <div className="form-actions">{onCancel && <button type="button" className="button secondary" onClick={onCancel}>Bekor qilish</button>}<button className="button primary" type="submit" disabled={!canWrite}><Check size={16} aria-hidden="true" />{submitLabel}</button></div>
     </form>
   );
 }

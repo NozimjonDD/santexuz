@@ -29,7 +29,7 @@ function moveSearchFocus(event: ReactKeyboardEvent<HTMLDivElement>) {
 }
 
 export default function Shell() {
-  const { db, reset } = useStore();
+  const { db, reset, isMock, reload } = useStore();
   const location = useLocation();
   const [mobile, setMobile] = useState(false);
   const [query, setQuery] = useState('');
@@ -115,7 +115,7 @@ export default function Shell() {
           </div>
         ))}
       </nav>
-      <div className="sidebar-bottom"><ShieldCheck size={18} /><div><strong>Demo ish maydoni</strong><small>Faqat namuna ma’lumotlar</small></div><Badge tone="blue">v1.0</Badge></div>
+      <div className="sidebar-bottom"><ShieldCheck size={18} /><div><strong>{isMock ? 'Demo ish maydoni' : 'API ish maydoni'}</strong><small>{isMock ? 'JSON namuna ma’lumotlari' : 'Faqat ko‘rish rejimi'}</small></div><Badge tone="blue">v1.0</Badge></div>
     </>
   );
 
@@ -138,12 +138,12 @@ export default function Shell() {
               {query.trim() && popup !== 'search' && <div className="search-results" role="region" aria-label="Global qidiruv natijalari" onKeyDown={moveSearchFocus}><SearchResults results={results} hasQuery onSelect={closeSearch} /></div>}
             </div>
             <button className="icon-button mobile-search-toggle" aria-label="Global qidiruvni ochish" aria-haspopup="dialog" onClick={() => setPopup('search')}><Search size={20} /></button>
-            <Badge tone="warning">DEMO</Badge>
+            <Badge tone={isMock ? 'warning' : 'blue'}>{isMock ? 'DEMO' : 'API · KO‘RISH'}</Badge>
             <button className="icon-button notification-button" aria-label={`Bildirishnomalar: ${attention.length} ta`} aria-haspopup="dialog" onClick={() => setPopup('notifications')}><Bell size={20} />{db.settings.notifications && attention.length > 0 && <i />}</button>
-            <button className="profile-button" onClick={() => setPopup('profile')} aria-label="Profil menyusi" aria-haspopup="dialog"><Avatar name="Demo Admin" small /><span><strong>Demo Admin</strong><small>Administrator</small></span><ChevronDown size={14} /></button>
+            <button className="profile-button" onClick={() => setPopup('profile')} aria-label="Profil menyusi" aria-haspopup="dialog"><Avatar name={isMock ? 'Demo Admin' : 'API'} small /><span><strong>{isMock ? 'Demo Admin' : 'API ko‘rinishi'}</strong><small>{isMock ? 'Administrator' : 'Faqat ko‘rish'}</small></span><ChevronDown size={14} /></button>
           </div>
         </header>
-        <div className="demo-banner"><FlaskConical size={15} /><span><strong>Namoyish muhiti.</strong> Ma’lumotlar sun’iy. Amallar faqat joriy sessiyada saqlanadi.</span><span className="environment">{import.meta.env.PROD ? 'PRODUCTION · STATIC' : 'DEVELOPMENT'}</span></div>
+        <div className="demo-banner"><FlaskConical size={15} /><span>{isMock ? <><strong>Namoyish muhiti.</strong> Statik JSON ma’lumotlari. Amallar faqat joriy sessiyada saqlanadi.</> : <><strong>API rejimi.</strong> Server ma’lumotlari ko‘rsatilmoqda. Saqlash amallari hali ulanmagan.</>}</span><span className="environment">{import.meta.env.PROD ? 'PRODUCTION' : 'DEVELOPMENT'} · {isMock ? 'MOCK JSON' : 'API'}</span></div>
         <main id="main-content" className="main-content" tabIndex={-1}>
           <Suspense fallback={<div className="empty-state" role="status"><span className="loading-dot" aria-hidden="true" />Sahifa yuklanmoqda…</div>}><Outlet /></Suspense>
         </main>
@@ -158,7 +158,7 @@ export default function Shell() {
         </Modal>
       )}
       {popup === 'notifications' && (
-        <Modal title="Diqqat talab qiladigan buyurtmalar" description={db.settings.notifications ? 'Namuna ogohlantirishlar. Telegram ulanmagan.' : 'CRM bildirishnomalari o‘chirilgan. Buyurtmalar ro‘yxati quyida.'} onClose={() => setPopup(null)}>
+        <Modal title="Diqqat talab qiladigan buyurtmalar" description={db.settings.notifications ? (isMock ? 'Namuna ogohlantirishlar. Telegram ulanmagan.' : 'Yuklangan buyurtmalardan tuzilgan ro‘yxat.') : 'CRM bildirishnomalari o‘chirilgan. Buyurtmalar ro‘yxati quyida.'} onClose={() => setPopup(null)}>
           <div className="notification-list">{attention.length ? attention.map(o => (
             <Link to={`/orders/${o.id}`} key={o.id} onClick={() => setPopup(null)}>
               <span className={`notification-mark ${o.status === 'dispute' ? 'danger' : ''}`}><Bell size={17} /></span>
@@ -168,15 +168,15 @@ export default function Shell() {
         </Modal>
       )}
       {popup === 'profile' && (
-        <Modal title="Demo administrator" onClose={() => setPopup(null)}>
+        <Modal title={isMock ? 'Demo administrator' : 'API ko‘rinishi'} onClose={() => setPopup(null)}>
           <p>Marhamat xizmat markazi · to‘liq admin ko‘rinishi</p>
-          <p className="muted">Login va Telegram akkaunt tasdig‘i backend bosqichida ulanadi.</p>
+          <p className="muted">{isMock ? 'Login va Telegram akkaunt tasdig‘i backend bosqichida ulanadi.' : 'Ma’lumotlar backend sessiyasi orqali olinadi. Ushbu ulanish haqiqiy saqlash yoki login ekranini qo‘shmaydi.'}</p>
           <div className="profile-actions">
             <Link to="/settings" className="button secondary" onClick={() => setPopup(null)}><Settings size={17} />Sozlamalar</Link>
-            <button className="button secondary" onClick={() => {
+            {isMock ? <button className="button secondary" onClick={() => {
               setPopup(null);
               setConfirm({ title: 'Demo ma’lumotlarni tiklash', description: 'Joriy sessiyadagi barcha o‘zgarishlar va audit namunalari boshlang‘ich holatga qaytadi.', danger: true, action: reset });
-            }}><RotateCcw size={17} />Demo holatini tiklash</button>
+            }}><RotateCcw size={17} />Demo holatini tiklash</button> : <button className="button secondary" onClick={reload}><RotateCcw size={17} />Ma’lumotni yangilash</button>}
           </div>
         </Modal>
       )}

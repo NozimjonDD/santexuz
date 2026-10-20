@@ -2,7 +2,7 @@
 
 Marhamat pilotidagi santexnika xizmat markazi uchun o‘zbekcha React admin panel. Talablar: [`docs/reactjs.md`](docs/reactjs.md) va [`docs/TZ_docs.md`](docs/TZ_docs.md).
 
-**Holat:** statik, interaktiv demo. API, login, Telegram, haqiqiy to‘lov, xarita va PDF generator ulanmagan. Production build ham **DEMO** belgisi va mock ma’lumotlar bilan ishlaydi; bu backendli ishlab turgan xizmat emas. Maxfiy yoki haqiqiy mijoz ma’lumotlarini kiritmang. Demo ommaga ochiq bo‘lishi mumkin; unda autentifikatsiya yo‘q. Mini App ekranlari ushbu CRM doirasiga kirmaydi.
+**Holat:** ikkita ma’lumot manbasi bor: `PUBLIC_API_MOCK=True` — statik JSON bilan interaktiv demo; `False` — `PUBLIC_API_BASE_URL` orqali real API ma’lumotlarini ko‘rish. APIga yozish commandlari, login ekrani, Telegram, haqiqiy to‘lov, xarita va PDF generator hali ulanmagan. Standart muhitlar mock rejimda; bu to‘liq backendli production CRM emas. Ommaviy demo JSONga haqiqiy mijoz ma’lumotlarini yozmang. Mini App ekranlari ushbu CRM doirasiga kirmaydi.
 
 ## Muhim: bu kompyuterda ishga tushirmang
 
@@ -40,11 +40,35 @@ npx playwright install --with-deps chromium webkit && npm run test:e2e
 | --- | --- | --- |
 | Buyruq | `npm run dev` | `npm run build` |
 | Muhit fayli | `.env.development` | `.env.production` |
-| Data | Mock, joriy sessiyada | Mock, joriy sessiyada |
-| Ko‘rinadigan belgi | `DEVELOPMENT` | `PRODUCTION · STATIC` |
+| Standart data | JSON mock, joriy sessiyada | JSON mock, joriy sessiyada |
+| Ko‘rinadigan belgi | `DEVELOPMENT · MOCK JSON` | `PRODUCTION · MOCK JSON` |
 | Natija | Vite HMR | `dist/`, kichraytirilgan va sahifa bo‘yicha ajratilgan fayllar |
 
-`VITE_*` o‘zgaruvchilar build vaqtida ommaviy JavaScriptga yoziladi. U yerga sir, token yoki parol kiritmang. `VITE_DATA_MODE=mock` mazkur versiyaning yagona qo‘llab-quvvatlanadigan data rejimi; uni o‘zgartirish API ulanishini yaratmaydi.
+### JSON mock yoki real API
+
+`.env.development` / `.env.production`dagi public sozlamalar:
+
+```dotenv
+PUBLIC_API_MOCK=True
+PUBLIC_API_BASE_URL=/api/v1/admin/
+```
+
+- `True`: `public/mock/database.json` HTTP orqali yuklanadi. Barcha namunaviy qiymatlar JSONda; qayta ishlatiladigan default/snapshot havolalarini `src/data/mock.ts` mustaqil UI nusxalariga ochadi. Tahrirlar faqat joriy sessiyada; reset JSONni qayta yuklaydi.
+- `False`: base URLga `customers/`, `plumbers/`, `shops/`, `services/`, `materials/`, `orders/`, `payments/`, `reviews/`, `contract-templates/`, `audit-events/`, `settings/` qo‘shib GET yuboriladi. Ro‘yxat massiv yoki DRF `{ "results": [], "next": null }` bo‘lishi mumkin; keyingi sahifalar ham olinadi. Hozirgi compatibility DTO `src/domain/types.ts` shaklida, camelCase va numeric pul qiymatlari bilan bo‘lishi kerak. Batafsil kontrakt: [`instruction_api.md` §17](instruction_api.md#17-public_api_mock-va-public_api_base_url--joriy-ulanish).
+- API rejimi **faqat ko‘rish uchun**: lokal demo mutation/reset va saqlash tugmalari bloklanadi. Server ma’lumotlari demo seed bilan almashtirilmaydi. Xato, noto‘g‘ri JSON, yetishmayotgan maydon yoki ruxsat muammosi qayta urinish oynasida ko‘rsatiladi.
+
+Real API namunasi (`.env.production.local`ga yozish mumkin):
+
+```dotenv
+PUBLIC_API_MOCK=False
+PUBLIC_API_BASE_URL=https://api.example.com/api/v1/admin/
+```
+
+`True`/`False` katta-kichik harfdan qat’i nazar o‘qiladi; `yes`, `1` yoki bo‘sh qiymat xato. Sozlama umuman berilmasa mock rejimi olinadi. `False` uchun base URL majburiy; HTTP(S) yoki `/` bilan boshlanadigan yo‘l qabul qilinadi.
+
+Vite public o‘zgaruvchilarni [build vaqtida joylaydi](https://vite.dev/guide/env-and-mode). Developmentda env o‘zgarsa serverni qayta boshlang, productionda qayta build/deploy qiling — bular boshqa kompyuterda bajariladi. `VITE_*` va `PUBLIC_API_*` ichiga sir/parol/token yozmang. `.env.example` namuna sifatida berilgan; eski `VITE_DATA_MODE` ishlatilmaydi.
+
+Real backend session cookie va ruxsatni o‘zi ta’minlaydi. Tashqi origin uchun backend credentialed CORSni va hosting CSPdagi `connect-src`ni aniq API originiga moslash kerak. `/api/` manzili shu domen ostida bo‘lsa Nginx uni backendga proxy qilishi kerak; SPA HTML fallback API emas. Backend host/porti hali berilmagani sabab proxy taxmin bilan qo‘shilmadi.
 
 ## Production hosting
 
@@ -54,7 +78,7 @@ GitHub Actions kodi typecheck, biznes testlari, production build va desktop/mobi
 
 ### Ubuntu server: `titan-crm.hh-academy.uz`
 
-Bu frontend backend API’siga ulanmagan demo holatida qoladi. Unda faqat sun’iy ma’lumotlar bor; haqiqiy mijoz ma’lumotlarini kiritmang va uni amaldagi admin tizimi sifatida ishlatmang. Nginx build qilingan statik fayllarni `/var/www/titan-crm/current` dan to‘g‘ridan-to‘g‘ri xizmat qiladi; backend sozlamalariga tegilmaydi.
+Standart konfiguratsiyada frontend JSON demo holatida qoladi. Real rejim yoqilsa backend DTOlari, sessiya, CORS/CSP yoki `/api/` proxy alohida moslanishi kerak. Nginx build qilingan statik fayllarni `/var/www/titan-crm/current` dan to‘g‘ridan-to‘g‘ri xizmat qiladi; mavjud sozlama faqat frontend hostingidir.
 
 DNS’da `titan-crm.hh-academy.uz` A yozuvi server IP manziliga qaragan, 80/443 portlari ochiq bo‘lishi kerak. Backend Nginx sozlamalariga tegmasdan frontend uchun alohida site sozlanadi. Repo ildizidan (`admin_crm/` papkasining ota papkasidan):
 
@@ -81,7 +105,7 @@ Keyingi frontend versiyasini joylash uchun `npm ci && npm run build && sudo bash
 ```text
 src/
   app/                  # Router, shell, sessiya store, xatolik chegarasi
-  data/seed.ts          # Sun’iy Marhamat ma’lumotlari
+  data/                 # Public config, HTTP, JSON/API loader, validation, mock adapter
   domain/               # Turlar va mustaqil biznes qoidalari
   features/
     dashboard/          # KPI, dinamika, holatlar, operatsion navbat
@@ -93,13 +117,14 @@ src/
   shared/               # Qayta ishlatiladigan UI, format va eksport
   styles.css            # Dizayn tokenlari va responsive uslublar
 e2e/                    # Desktop va mobil brauzer ssenariylari
+public/mock/database.json # Sun’iy Marhamat ma’lumotlarining yagona manbasi
 deploy/                 # Statik production server sozlamalari
 ```
 
 ## Demo ma’lumot va qoidalar
 
 - 18 ta `DEMO-*` buyurtma barcha asosiy bosqichlarni namoyish qiladi. Ismlar va `+99800…` telefonlar sun’iy. Dastlabki namunaviy davr: 12–18 oktyabr 2026.
-- Saqlash faqat React xotirasida. Sahifalar orasida o‘tish o‘zgarishlarni saqlaydi, to‘liq yangilash esa boshlang‘ich namunaga qaytaradi. Profil menyusida “Demo holatini tiklash” ham bor. Shaxsiy ma’lumotlar localStoragega yozilmaydi.
+- Mock rejimida saqlash faqat React xotirasida. Sahifalar orasida o‘tish o‘zgarishlarni saqlaydi, to‘liq yangilash esa JSONni qayta yuklaydi. Profil menyusida “Demo holatini tiklash” bor. API rejimida profil menyusi serverdan qayta yuklashni taklif qiladi. Shaxsiy ma’lumotlar localStoragega yozilmaydi.
 - `null` narx/stavka “Sozlanmagan”; `0` alohida haqiqiy nol qiymat. Tasdiqlanmagan markaz manzili/telefoni/ish vaqti, standart avans va komissiyalar bo‘sh boshlanadi. Buyurtmalardagi mavjud qiymatlar aniq demo nusxalar.
 - Tasdiqlangan smeta va shartnoma matni katalog/andozadan mustaqil. Smeta qayta yuborilganda eski versiya, oldingi tasdiqlangan jami va imzolangan shartnoma nusxasi saqlanadi; yangi mijoz tasdig‘i va imzolar kutiladi.
 - Material tayyorlash tasdiqlangan smeta, to‘rt tomon imzosi va yetarli tasdiqlangan avansdan keyin ochiladi. Yetkazish qismlarining soni yetkazish haqini ko‘paytirmaydi.
@@ -112,7 +137,9 @@ deploy/                 # Statik production server sozlamalari
 
 ## Backendga o‘tish
 
-`StoreProvider` hozir lokal tranzaksiya chegarasi. DRF ulanayotganda sahifa komponentlarini o‘zgartirmasdan domain turlariga mos repository/query qatlami qo‘shing. Endpointlar ataylab taxmin qilinmagan. Autentifikatsiya, ruxsatlar, server validatsiyasi, status mashinasi, audit, optimistic concurrency/idempotency, fayl va PDF, ETA va bildirishnomalar serverda qayta amalga oshirilishi shart. Frontend qoidalari xavfsizlik chegarasi emas.
+Backend uchun TZ bilan moslik tahlili, demo cheklovlari va taklif etilgan API kontrakti: [`instruction_api.md`](instruction_api.md). §17 hozirgi GET connector talabini belgilaydi; qolgan biznes commandlari va backend implementatsiyasi hali tayyor emas.
+
+`StoreProvider` hozir lokal tranzaksiya chegarasi. DRF ulanayotganda repository/query va DTO adapter qatlami qo‘shiladi; demo amallari haqiqiy rol commandlariga almashtiriladi. Autentifikatsiya, ruxsatlar, server validatsiyasi, status mashinasi, audit, optimistic concurrency/idempotency, fayl va PDF, ETA va bildirishnomalar serverda amalga oshirilishi shart. Frontend qoidalari xavfsizlik chegarasi emas.
 
 Qamrov va qo‘lda tekshirish uchun: [`docs/IMPLEMENTATION.md`](docs/IMPLEMENTATION.md).
 
